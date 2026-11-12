@@ -1,0 +1,51 @@
+
+     DBHOST=ew1r-kapp-db-primary.rel.kurtosys-internal.net
+     echo "[$DBHOST]"; getent hosts "$DBHOST"; nc -zv "$DBHOST" 3306
+     mysql -h "$DBHOST" -u CSE -p UDM__ -e "SELECT @@hostname, DATABASE(), CURRENT_USER();"
+     umask 077
+     mkdir -p /tmp/KSYS-12922-rel && chmod 700 /tmp/KSYS-12922-rel && cd /tmp/KSYS-12922-rel
+      TS=$(date +%Y%m%d-%H%M%S); echo $TS
+
+---  Secrets: the 3 REL credentials (ONE LINE)
+     mysqldump -h "$DBHOST" -u CSE -p --column-statistics=0 --hex-blob --no-create-info --complete-insert --skip-lock-tables --skip-disable-keys --skip-add-locks --max_allowed_packet=512M UDM__ Secrets --where="id IN ('a9f0e991-cfa3-44a9-a794-85a146bd7573','7d9582b0-5dc0-48ca-80f7-b3c5ebd82b42','25b6b4fc-1367-42e0-a949-47f902060ff2')" > Secrets_aiprovider_backup_$TS.sql
+
+--   Client rows with the module, 15 (ONE LINE)
+    mysqldump -h "$DBHOST" -u CSE -p --column-statistics=0 --hex-blob --no-create-info --complete-insert --replace --skip-lock-tables --skip-disable-keys --skip-add-locks --max_allowed_packet=512M UDM__ Client --where="CAST(modules AS CHAR) LIKE '%AIProviders%'" > Client_modules_backup_$TS.sql
+
+--   The two tables AIProvider + AIProviderCall, structure + data (ONE LINE)
+--   mysqldump -h "$DBHOST" -u CSE -p --column-statistics=0 --hex-blob --complete-insert --skip-lock-tables --skip-disable-keys --skip-add-locks --max_allowed_packet=512M UDM__ AIProvider AIProviderCall > AIProvider_tables_backup_$TS.sql
+
+-- [SHELL] Verify (one command at a time)
+--   ls -l
+--   tail -n 2 Secrets_aiprovider_backup_$TS.sql          # each: "-- Dump completed"
+--   tail -n 2 Client_modules_backup_$TS.sql
+--   tail -n 2 AIProvider_tables_backup_$TS.sql
+--   grep -o "'[0-9a-f-]\{36\}'" Secrets_aiprovider_backup_$TS.sql | sort -u | wc -l   # 3
+--   grep -o "([0-9]*,'" Client_modules_backup_$TS.sql | wc -l                         # 15
+--   grep -c "INSERT INTO" AIProvider_tables_backup_$TS.sql                            # 3
+--   grep -c "CREATE TABLE" AIProvider_tables_backup_$TS.sql                           # expect 2 (not yet checked)
+--   sha256sum *.sql > checksums_$TS.txt; cat checksums_$TS.txt
+-- RECORDED:
+--   fa6c6479...8246b AIProvider_tables_backup_20261110-112806.sql (1,515,721 B)
+--   274b4004...20728 Client_modules_backup_20261110-112806.sql    (16,977 B)
+--   9ae57b5a...70a17 Secrets_aiprovider_backup_20261110-112806.sql (3,044 B)
+
+-- ---------- 2B. SEED-ROW DUMPS (TO DO before the upgrade) ----------
+-- Rows the upgrade deletes. Not covered by 2A. Roles table is NOT changed: no dump.
+-- [SHELL] new timestamp for this set (same folder):
+--   cd /tmp/KSYS-12922-rel && umask 077 && TS2=$(date +%Y%m%d-%H%M%S) && echo "[$DBHOST] [$TS2] $(pwd)"
+
+-- [SHELL] (ONE LINE each, CSE, read-only)
+--   mysqldump -h "$DBHOST" -u CSE -p --column-statistics=0 --hex-blob --no-create-info --complete-insert --replace --skip-lock-tables --skip-disable-keys --skip-add-locks UDM__ Modules --where="moduleId='AIProviders'" > Seed_Modules_$TS2.sql
+--   mysqldump -h "$DBHOST" -u CSE -p --column-statistics=0 --hex-blob --no-create-info --complete-insert --replace --skip-lock-tables --skip-disable-keys --skip-add-locks UDM__ Permissions --where="permissionId IN ('VIEW_AI_PROVIDERS','UPSERT_AI_PROVIDER','DELETE_AI_PROVIDER','MAKE_AI_PROVIDER_CALL')" > Seed_Permissions_$TS2.sql
+--   mysqldump -h "$DBHOST" -u CSE -p --column-statistics=0 --hex-blob --no-create-info --complete-insert --replace --skip-lock-tables --skip-disable-keys --skip-add-locks UDM__ RolePermission --where="permissionId IN ('VIEW_AI_PROVIDERS','UPSERT_AI_PROVIDER','DELETE_AI_PROVIDER','MAKE_AI_PROVIDER_CALL')" > Seed_RolePermission_$TS2.sql
+--   mysqldump -h "$DBHOST" -u CSE -p --column-statistics=0 --hex-blob --no-create-info --complete-insert --replace --skip-lock-tables --skip-disable-keys --skip-add-locks UDM__ ActivityType --where="activityType IN ('AI_PROVIDER_CREATE','AI_PROVIDER_UPDATE','AI_PROVIDER_DELETE')" > Seed_ActivityType_$TS2.sql
+--   mysqldump -h "$DBHOST" -u CSE -p --column-statistics=0 --hex-blob --no-create-info --complete-insert --replace --skip-lock-tables --skip-disable-keys --skip-add-locks UDM__ ActivityCategoryType --where="activityType IN ('AI_PROVIDER_CREATE','AI_PROVIDER_UPDATE','AI_PROVIDER_DELETE')" > Seed_ActivityCategoryType_$TS2.sql
+--   mysqldump -h "$DBHOST" -u CSE -p --column-statistics=0 --hex-blob --no-create-info --complete-insert --replace --skip-lock-tables --skip-disable-keys --skip-add-locks UDM__ TableId --where="tableName IN ('AIProvider','AIProviderCall')" > Seed_TableId_$TS2.sql
+
+-- [SHELL] Verify the seed set
+--   ls -l Seed_*_$TS2.sql                       # none 0 bytes
+--   tail -n 2 Seed_*_$TS2.sql                   # each ends "-- Dump completed"
+--   grep -c "REPLACE INTO" Seed_*_$TS2.sql      # 1 per file
+--   sha256sum Seed_*_$TS2.sql > checksums_seed_$TS2.txt; cat checksums_seed_$TS2.txt
+-- Attach only the checksums files to Jira. Never the Secrets dump.

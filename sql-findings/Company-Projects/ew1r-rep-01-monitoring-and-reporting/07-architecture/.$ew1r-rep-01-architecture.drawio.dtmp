@@ -1,0 +1,1452 @@
+<mxfile host="Electron">
+  <diagram id="ew1r-rep-01" name="EW1R-REP-01 Architecture">
+    <mxGraphModel dx="1948" dy="1093" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1200" background="#E1D5E7" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="2" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=20;fontStyle=1;" value="EW1R-REP-01 — Monitoring and Reporting Server" vertex="1">
+          <mxGeometry height="40" width="900" x="400" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="3" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=13;" value="Discovery Architecture — Decommission Readiness Assessment" vertex="1">
+          <mxGeometry height="30" width="900" x="400" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="10" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;arcSize=5;" value="EW1R-REP-01&lt;br&gt;Windows Server 2019 Datacenter&lt;br&gt;Non-production host monitoring production systems" vertex="1">
+          <mxGeometry height="70" width="500" x="550" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="20" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1;" value="SQL Server 2019 Developer Edition&#xa;60 Agent Jobs | 8 Databases | 97 Linked Servers&#xa;Service Account: SHNONPRD\sqlsrv" vertex="1">
+          <mxGeometry height="70" width="340" x="300" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="21" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;fontStyle=1;" value="Grafana 9.5.2 — Port 443 HTTPS&#xa;90 Dashboards | 21 Datasources | 3 Alert Rules&#xa;URL: https://ew1r-rep-01" vertex="1">
+          <mxGeometry height="70" width="340" x="1240" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="e_srv_sql" edge="1" parent="1" source="10" style="edgeStyle=orthogonalEdgeStyle;" target="20">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_srv_grf" edge="1" parent="1" source="10" style="edgeStyle=orthogonalEdgeStyle;" target="21">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_db" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=11;" value="LOCAL DATABASES (363 GB total)" vertex="1">
+          <mxGeometry height="25" width="260" x="30" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="db1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" value="DBA_VCC_AWS&#xa;180 GB | SIMPLE&#xa;KAPP API + AWS monitoring&#xa;563M rows | every 15min&#xa;STATUS: ACTIVE" vertex="1">
+          <mxGeometry height="90" width="170" x="30" y="415" as="geometry" />
+        </mxCell>
+        <mxCell id="db2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" value="DBA_VCC_MEMSQL&#xa;77 GB | SIMPLE&#xa;SingleStore monitoring&#xa;Jobs DISABLED May 2026&#xa;STATUS: INACTIVE" vertex="1">
+          <mxGeometry height="90" width="170" x="215" y="415" as="geometry" />
+        </mxCell>
+        <mxCell id="db3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" value="DBA_VCC_COST&#xa;5 GB | FULL RECOVERY&#xa;Client entity counts&#xa;19 REP_MONTHEND procs&#xa;STATUS: ACTIVE" vertex="1">
+          <mxGeometry height="90" width="170" x="400" y="415" as="geometry" />
+        </mxCell>
+        <mxCell id="db4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" value="DBA_VCC_MYSQL&#xa;26 GB | SIMPLE&#xa;MySQL + RDS monitoring&#xa;Active daily collection&#xa;STATUS: ACTIVE" vertex="1">
+          <mxGeometry height="90" width="170" x="585" y="415" as="geometry" />
+        </mxCell>
+        <mxCell id="db5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" value="DBA_VCC&#xa;21 GB | SIMPLE&#xa;Core VCC framework&#xa;Encore + BNY IIS logs&#xa;STATUS: ACTIVE" vertex="1">
+          <mxGeometry height="90" width="170" x="770" y="415" as="geometry" />
+        </mxCell>
+        <mxCell id="db6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" value="DBA_VCC_ATLASSIAN&#xa;2 GB | SIMPLE&#xa;Jira/Confluence data&#xa;Monthly sprint pull&#xa;STATUS: ACTIVE" vertex="1">
+          <mxGeometry height="90" width="170" x="955" y="415" as="geometry" />
+        </mxCell>
+        <mxCell id="db7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" value="KURTOSYS_BASELINE&#xa;51 GB | SIMPLE&#xa;Performance baselines&#xa;Consumer unknown&#xa;STATUS: UNKNOWN" vertex="1">
+          <mxGeometry height="90" width="170" x="1140" y="415" as="geometry" />
+        </mxCell>
+        <mxCell id="db8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" value="Utilities&#xa;185 MB | SIMPLE&#xa;DBA utility scripts&#xa;Stored procedures&#xa;STATUS: ACTIVE" vertex="1">
+          <mxGeometry height="90" width="170" x="1325" y="415" as="geometry" />
+        </mxCell>
+        <mxCell id="e_sql_db1" edge="1" parent="1" source="20" style="edgeStyle=orthogonalEdgeStyle;" target="db1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_sql_db2" edge="1" parent="1" source="20" style="edgeStyle=orthogonalEdgeStyle;" target="db2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_sql_db3" edge="1" parent="1" source="20" style="edgeStyle=orthogonalEdgeStyle;" target="db3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_sql_db4" edge="1" parent="1" source="20" style="edgeStyle=orthogonalEdgeStyle;" target="db4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_sql_db5" edge="1" parent="1" source="20" style="edgeStyle=orthogonalEdgeStyle;" target="db5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_sql_db6" edge="1" parent="1" source="20" style="edgeStyle=orthogonalEdgeStyle;" target="db6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_sql_db7" edge="1" parent="1" source="20" style="edgeStyle=orthogonalEdgeStyle;" target="db7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_sql_db8" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="640" y="319.9966666666666" as="sourcePoint" />
+            <mxPoint x="1410.066666666667" y="459.93" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lbl_ext" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=11;" value="EXTERNAL TARGETS — COLLECTS FROM" vertex="1">
+          <mxGeometry height="25" width="300" x="30" y="570" as="geometry" />
+        </mxCell>
+        <mxCell id="ext1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" value="EW2P-MSSQL-01/02&#xa;SQL Server | EU-West-2&#xa;Production | Port 1433&#xa;ACTIVE — monitored" vertex="1">
+          <mxGeometry height="75" width="160" x="35" y="605" as="geometry" />
+        </mxCell>
+        <mxCell id="ext2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" value="EW1P-OCT RDS&#xa;SQL Server | EU-West-1&#xa;AWS RDS | Port 1433&#xa;Backup job active" vertex="1">
+          <mxGeometry height="75" width="160" x="205" y="605" as="geometry" />
+        </mxCell>
+        <mxCell id="ext3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" value="SingleStore Clusters&#xa;EC1/EW1/EW2/UE1&#xa;97 linked servers&#xa;ALL JOBS DISABLED" vertex="1">
+          <mxGeometry height="75" width="160" x="380" y="605" as="geometry" />
+        </mxCell>
+        <mxCell id="ext4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" value="KAPP MySQL&#xa;Dev/Rel/UK/EU/US Prod&#xa;Port 3306 | user: root&#xa;Grafana reads directly" vertex="1">
+          <mxGeometry height="75" width="160" x="555" y="605" as="geometry" />
+        </mxCell>
+        <mxCell id="ext5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" value="Zabbix MySQL x4&#xa;NonProd + Prod&#xa;Uses donovan.vangraan&#xa;ROTATE CREDENTIALS" vertex="1">
+          <mxGeometry height="75" width="160" x="730" y="605" as="geometry" />
+        </mxCell>
+        <mxCell id="ext6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" value="AWS APIs&#xa;CloudWatch/S3/EC2/RDS&#xa;Python | Port 443&#xa;Every 15min + daily" vertex="1">
+          <mxGeometry height="75" width="160" x="905" y="605" as="geometry" />
+        </mxCell>
+        <mxCell id="ext7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" value="NiFi API&#xa;10.125.9.192:8443&#xa;JSON datasource&#xa;EU Prod" vertex="1">
+          <mxGeometry height="75" width="160" x="1080" y="605" as="geometry" />
+        </mxCell>
+        <mxCell id="ext8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" value="Jira API&#xa;Monthly sprint pull&#xa;Port 443 HTTPS&#xa;Into DBA_VCC_ATLASSIAN" vertex="1">
+          <mxGeometry height="75" width="160" x="1255" y="605" as="geometry" />
+        </mxCell>
+        <mxCell id="ext9" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" value="InfluxDB&#xa;Grafana datasource&#xa;URL not confirmed&#xa;STATUS: UNKNOWN" vertex="1">
+          <mxGeometry height="75" width="160" x="1430" y="605" as="geometry" />
+        </mxCell>
+        <mxCell id="e_sql_ext1" edge="1" parent="1" source="20" style="edgeStyle=orthogonalEdgeStyle;dashed=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="ext1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="470" y="320" />
+              <mxPoint x="115" y="320" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_sql_ext2" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;dashed=1;strokeColor=#6c8ebf;fillColor=#dae8fc;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="472.0666666666666" y="310" as="sourcePoint" />
+            <mxPoint x="287" y="605" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_sql_ext3" edge="1" parent="1" source="20" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" target="ext3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_sql_ext4" edge="1" parent="1" source="20" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" target="ext4">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="470" y="457" />
+              <mxPoint x="670" y="457" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_sql_ext6" edge="1" parent="1" source="20" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" target="ext6">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="985" y="275" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_sql_ext8" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;dashed=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="ext8">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="637.5" y="319.9966666666666" as="sourcePoint" />
+            <mxPoint x="1332.5" y="649.93" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_grf_ext4" edge="1" parent="1" source="21" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" target="ext4">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="670" y="225" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_grf_ext5" edge="1" parent="1" source="21" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" target="ext5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_grf_ext7" edge="1" parent="1" source="21" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" target="ext7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_grf_ext9" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;dashed=1;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1579" y="240" />
+            </Array>
+            <mxPoint x="1550" y="240" as="sourcePoint" />
+            <mxPoint x="1579.336666666667" y="595" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="lbl_con" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=11;" value="CONSUMERS — SERVED TO" vertex="1">
+          <mxGeometry height="25" width="260" x="30" y="750" as="geometry" />
+        </mxCell>
+        <mxCell id="con1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" value="Grafana Users&#xa;tashvir.babulal (admin)&#xa;yogeshwar.phull (admin)&#xa;rayhaan.suleyman (admin)&#xa;Last seen: June 2026" vertex="1">
+          <mxGeometry height="90" width="170" x="30" y="785" as="geometry" />
+        </mxCell>
+        <mxCell id="con2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" value="Slack&#xa;alerts-data-operations&#xa;KAPP config alerts&#xa;Read query failures&#xa;DEFAULT route" vertex="1">
+          <mxGeometry height="90" width="170" x="215" y="785" as="geometry" />
+        </mxCell>
+        <mxCell id="con3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" value="Slack&#xa;alert-app-allow2fa-disabled&#xa;KAPP auth alerts&#xa;Client Auth = Yes only&#xa;ACTIVE" vertex="1">
+          <mxGeometry height="90" width="170" x="400" y="785" as="geometry" />
+        </mxCell>
+        <mxCell id="con4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" value="dba@kurtosys.com&#xa;CHECKDB failures&#xa;Backup failures&#xa;Disk / VLF alerts&#xa;WHO MONITORS THIS?" vertex="1">
+          <mxGeometry height="90" width="170" x="585" y="785" as="geometry" />
+        </mxCell>
+        <mxCell id="con5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" value="Finance / Acct Mgmt?&#xa;DBA_VCC_COST reports&#xa;19 REP_MONTHEND procs&#xa;Billing data?&#xa;UNCONFIRMED" vertex="1">
+          <mxGeometry height="90" width="170" x="770" y="785" as="geometry" />
+        </mxCell>
+        <mxCell id="con6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" value="Zabbix Server&#xa;Monitors this server&#xa;Port 10050 inbound&#xa;Agent PID: 5700&#xa;ACTIVE" vertex="1">
+          <mxGeometry height="90" width="170" x="955" y="785" as="geometry" />
+        </mxCell>
+        <mxCell id="con7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" value="Month-End Dashboards&#xa;KAPP/Encore/DXM/WPv2&#xa;Read from DBA_VCC_MEMSQL&#xa;NO DATA since May 2026&#xa;BROKEN — RAISE MONDAY" vertex="1">
+          <mxGeometry height="90" width="170" x="1140" y="785" as="geometry" />
+        </mxCell>
+        <mxCell id="e_grf_con1" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="115" y="200" />
+            </Array>
+            <mxPoint x="1200" y="200" as="sourcePoint" />
+            <mxPoint x="115" y="765" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_grf_con2" edge="1" parent="1" source="21" style="edgeStyle=orthogonalEdgeStyle;" target="con2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_grf_con3" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="465" y="319.93" />
+            </Array>
+            <mxPoint x="940" y="319.9966666666666" as="sourcePoint" />
+            <mxPoint x="465" y="780" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_sql_con4" edge="1" parent="1" source="20" style="edgeStyle=orthogonalEdgeStyle;" target="con4">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="470" y="547" />
+              <mxPoint x="670" y="547" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_db3_con5" edge="1" parent="1" source="db3" style="edgeStyle=orthogonalEdgeStyle;" target="con5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_srv_con6" edge="1" parent="1" source="10" style="edgeStyle=orthogonalEdgeStyle;" target="con6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_db2_con7" edge="1" parent="1" source="db2" style="edgeStyle=orthogonalEdgeStyle;" target="con7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_rrm" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=11;" value="DECOMMISSION CLASSIFICATION" vertex="1">
+          <mxGeometry height="25" width="280" x="30" y="945" as="geometry" />
+        </mxCell>
+        <mxCell id="rrm1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;fontStyle=1;" value="RETIRE&#xa;DBA_VCC_MEMSQL&#xa;97 SingleStore linked servers&#xa;VCC MemSQL jobs (7)" vertex="1">
+          <mxGeometry height="75" width="190" x="30" y="980" as="geometry" />
+        </mxCell>
+        <mxCell id="rrm2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" value="REPLACE → TECH-3428&#xa;DBA_VCC_AWS (180GB)&#xa;DBA_VCC_MYSQL (26GB)&#xa;VCC AWS + MySQL jobs" vertex="1">
+          <mxGeometry height="75" width="190" x="240" y="980" as="geometry" />
+        </mxCell>
+        <mxCell id="rrm3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" value="REPLACE → Grafana Cloud&#xa;90 dashboards&#xa;3 active admins&#xa;Re-route Slack alerts" vertex="1">
+          <mxGeometry height="75" width="190" x="450" y="980" as="geometry" />
+        </mxCell>
+        <mxCell id="rrm4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontStyle=1;" value="MOVE → New SQL Host&#xa;DBA Maintenance jobs&#xa;Active linked servers&#xa;Backup jobs" vertex="1">
+          <mxGeometry height="75" width="190" x="660" y="980" as="geometry" />
+        </mxCell>
+        <mxCell id="rrm5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;fontStyle=1;" value="INVESTIGATE FIRST&#xa;DBA_VCC_COST — billing?&#xa;DBA_VCC_ATLASSIAN&#xa;KURTOSYS_BASELINE" vertex="1">
+          <mxGeometry height="75" width="190" x="870" y="980" as="geometry" />
+        </mxCell>
+        <mxCell id="rrm6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;fontStyle=1;" value="DO NOW — SECURITY&#xa;Rotate donovan.vangraan&#xa;Zabbix credentials&#xa;Ex-employee — last seen Nov 2024" vertex="1">
+          <mxGeometry height="75" width="190" x="1080" y="980" as="geometry" />
+        </mxCell>
+        <mxCell id="rrm7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;fontStyle=1;" value="DO NOW — FIX&#xa;Month-end dashboards broken&#xa;DBA_VCC_MEMSQL jobs disabled&#xa;No data since May 2026" vertex="1">
+          <mxGeometry height="75" width="190" x="1290" y="980" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_leg" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=11;" value="LEGEND" vertex="1">
+          <mxGeometry height="25" width="100" x="1500" y="415" as="geometry" />
+        </mxCell>
+        <mxCell id="leg1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" value="Active / Healthy" vertex="1">
+          <mxGeometry height="30" width="160" x="1500" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="leg2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" value="Needs Investigation" vertex="1">
+          <mxGeometry height="30" width="160" x="1500" y="490" as="geometry" />
+        </mxCell>
+        <mxCell id="leg3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" value="Critical Issue / Risk" vertex="1">
+          <mxGeometry height="30" width="160" x="1500" y="530" as="geometry" />
+        </mxCell>
+        <mxCell id="leg4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" value="Core Server / Confirmed" vertex="1">
+          <mxGeometry height="30" width="160" x="1500" y="570" as="geometry" />
+        </mxCell>
+        <mxCell id="leg5" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontSize=10;" value="Solid line = hosts/contains" vertex="1">
+          <mxGeometry height="25" width="160" x="1500" y="615" as="geometry" />
+        </mxCell>
+        <mxCell id="leg6" parent="1" style="text;html=1;strokeColor=none;fillColor=none;fontSize=10;" value="Dashed line = collects from" vertex="1">
+          <mxGeometry height="25" width="160" x="1500" y="640" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
+
+
+
+
+
+
+Company-Projects
+Here's your directory structure:
+
+Company-Projects/
+└── ew1r-rep-01-monitoring-and-reporting/
+    ├── 01-sql-server-inventory/
+    │   └── sql-server-inventory.md
+    ├── 02-grafana-inventory/
+    │   └── grafana-inventory.md
+    ├── 03-external-targets/
+    │   └── external-targets.md
+    ├── 04-consumers-and-dependencies/
+    │   └── consumers-and-dependencies.md
+    ├── 05-classification-and-topology/
+    │   └── topology-and-classification.md
+    ├── 06-open-questions/
+    │   └── open-questions.md
+    ├── queries/
+    │   └── discovery-queries.sql
+    └── README.md
+
+Copy
+Looks like a server discovery/documentation project for ew1r-rep-01. Want me to read any of these files?
+
+i wanted to know about builing databases
+
+
+Context
+That's a pretty broad topic! Could you narrow it down a bit? For example:
+
+Are you looking to design/model a database schema from scratch?
+
+Do you want to build one on AWS (RDS, Aurora, DynamoDB, etc.)?
+
+Are you working with a specific database engine like SQL Server, MySQL, PostgreSQL?
+
+Or are you looking to migrate an existing database somewhere?
+
+Let me know what you're trying to do and I'll point you in the right direction.
+
+owhk please tell me what is going on now what should we do
+
+
+Context
+Based on your project files, it looks like you're doing a server discovery and documentation exercise for EW1R-REP-01 — a SQL Server / Grafana monitoring and reporting server.
+
+Let me read the key files to give you a proper picture of where things stand.
+
+3 files read
+README.md
+open-questions.md
+topology-and-classification.md
+Here's the full picture of what's going on and what needs to happen:
+
+The Situation
+You've completed a discovery investigation on EW1R-REP-01 — a SQL Server + Grafana monitoring server that Platform Engineering wants to decommission. The investigation found it's not safe to decommission yet.
+
+Key problems discovered:
+Grafana has 90 dashboards actively used by 3 people (tashvir.babulal, yogeshwar.phull, rayhaan.suleyman) as recently as June 2026
+
+Month-end reporting dashboards have been broken since May 2026 — jobs were disabled and nobody noticed
+
+AWS cost figures in reports have been stale for 18 months (since Nov 2024)
+
+A client usage tracking system (DBA_VCC_COST) runs every Sunday — unknown if it feeds client billing
+
+KAPP API monitoring is collecting 563M rows every 15 minutes — actively used
+
+An ex-employee's credentials (donovan.vangraan) are still live in Grafana datasources
+
+What You Need To Do Monday
+These are your critical actions, in priority order:
+
+Raise the broken month-end dashboards — ask yogeshwar.phull / tashvir.babulal who disabled the DBA_VCC_MEMSQL jobs in May 2026 and why. Find out if anyone noticed the data went stale.
+
+Confirm if DBA_VCC_COST feeds client billing — this is on FULL recovery model, meaning someone deliberately made it unlosable. Talk to Finance / platform management.
+
+Confirm which Grafana dashboards are client-facing or SLA-related — ask rayhaan.suleyman / tashvir.babulal. Month End Reporting and KAPP Client reports are the main suspects.
+
+Rotate donovan.vangraan's credentials immediately — he's an ex-employee last seen Nov 2024 and his credentials are still used for Grafana Zabbix datasources. This is a security issue regardless of decommission.
+
+Identify who calls the REP_MONTHEND_ stored procedures* — 19 of them exist in DBA_VCC_COST. Who runs them and what do they do with the output?
+
+Still Open (15 unanswered questions)
+The big ones still open are questions 1, 2, 3, 10, 13, 18, 20, 21, 22, and 23 — covering SSIS packages, billing data, firewall rules, client-facing dashboards, and decommission blast radius.
+
+Want me to help you draft the Monday conversation, update the open questions file, or prepare a summary to share with the team?
+
+yes i had a code like queries i need to make sure they are commented so that anyone comes may see that as well
+
+
+Context
+Let me read the queries file first.
+
+1 file read
+discovery-queries.sql
+The file already has section headers but the individual queries need better inline comments explaining the "why" — what each query is looking for and what to expect from the results. I'll add descriptive comments to every query now.
+
+Rewriting the SQL file with detailed inline comments on every query explaining the purpose, expected results, and what to watch out for.
+
+discovery-queries.sql
++140
+-1
+
+Undo
+Done. Every query now has comments that explain:
+
+What it does — the purpose of the query
+
+What to expect — the expected results based on what was found during discovery
+
+What to watch for — red flags like stale dates, missing notifications, or credential issues
+
+Context — why it matters in the bigger picture (e.g. the broken month-end dashboards, the ex-employee credentials, the silent alerts)
+
+The file header also now includes a brief description of the overall purpose, author context, and investigation status so anyone opening it cold knows exactly what they're looking at.
+
+push it in my repository
+
+
+Context
+I need to check if there's a git repository set up in your project directory first.
+
+Check if a git repository exists and what the current status is.
+
+shell
+
+Completed
+cd /Users/lunga.ndzimande/Documents/sql-findings/Company-Projects && git status
+fatal: not a git repository (or any of the parent directories): .git
+There's no git repository initialized here yet. I can set one up and push it, but I'll need a few things from you:
+
+Remote repository URL — e.g. a GitHub, GitLab, or Bitbucket repo URL like https://github.com/your-username/your-repo.git
+
+Branch name — e.g. main or master
+
+Do you already have an empty repo created on GitHub/GitLab, or do you need to create one first?
+
+i need an architecture now
+
+
+Context
+Could you give me a bit more detail? For example:
+
+What kind of architecture? — AWS cloud architecture, database architecture, system/application architecture, or a decommission/migration plan for this server?
+
+What's the goal? — Are you designing a replacement for EW1R-REP-01, migrating it to AWS, or something else entirely?
+
+Any constraints? — Budget, specific AWS services you want to use, existing infrastructure to integrate with?
+
+The more context you give me, the more useful the architecture will be.
+
+can you try to understand my directory what i wa s try to archive and this is my ticket ''Purpose
+
+Investigate and document the ew1r-rep-01 monitoring and reporting environment (ew1r-rep-01.ad.shnonprd.kurtosys-internal.net) to establish a complete inventory of workloads, consumers, and dependencies, and produce a decommission readiness assessment with retire / replace / move recommendations.
+
+This epic delivers read-only discovery and documentation only. It does not decommission the server, disable SQL Agent jobs, change Grafana configs, migrate dashboards, or alter production monitoring (separate follow-on epic(s)).
+
+Background — the problem
+
+The host started as a SQL Server monitoring box but now also runs Grafana, SQL Agent jobs, and monitoring for other systems (RDS MySQL, SingleStore, and others). Platform Engineering intends to decommission this server, but there is no authoritative inventory of what it runs, what it monitors, who consumes the output, or what would break if it were switched off.
+
+Without a structured discovery pass, decommission risks silent loss of alerts, orphaned Grafana dashboards, and undocumented SQL Agent jobs that teams still rely on.
+
+Why this epic exists
+
+Decommission safety — know every job, dashboard, alert, and external target before any change.
+
+Operational clarity — document who uses this server and how (URL/DNS, teams, alert recipients).
+
+Migration planning — classify each component as retire, replace (e.g. CloudWatch, Grafana Cloud, unified monitoring), or move to another host.
+
+Alignment with unified database monitoring initiatives (TECH-3428, TECH-3409) where overlap exists.
+
+Objectives
+
+Gain read-only access and explore the server without changing configuration or disabling jobs.
+
+Document SQL Server: databases, SQL Agent jobs, linked servers, and alert mechanisms.
+
+Document Grafana: datasources, dashboards, alert rules, access URL/DNS, and folder structure.
+
+Document external monitoring targets (RDS MySQL, SingleStore, other instances) and connection method.
+
+Identify consumers (teams/people) and infrastructure dependencies (DNS, firewall, service accounts, runbooks).
+
+Produce a topology diagram or equivalent bullet flow: server → targets monitored → consumers.
+
+Deliver retire / replace / move classification and scoped backlog for decommission follow-on epic(s).
+
+Scope
+
+In scope
+
+Read-only login and exploration of ew1r-rep-01.
+
+SQL Agent job inventory table (name, schedule, purpose, alert target, or "unknown").
+
+Grafana datasource and dashboard inventory (folder names sufficient; flag business-critical items).
+
+External systems monitored and how the host connects to each.
+
+Consumer list (teams/people) or "unknown" where not confirmed.
+
+Dependencies: DNS, firewall rules, service accounts, credential vault references (no secrets in docs).
+
+Open questions list for items needing a second pair of eyes.
+
+Confluence document (or equivalent) linked from this epic.
+
+Manager review and sign-off that documentation is ready for decommission planning.
+
+Out of scope (explicit)
+
+Decommissioning, powering off, or repurposing the server.
+
+Disabling SQL Agent jobs or changing Grafana/datasource configuration.
+
+Migrating dashboards or alerts to a replacement platform (follow-on epic).
+
+Building replacement monitoring (see TECH-3428 unified monitoring where applicable).
+
+Child work items under this epic until breakdown is agreed.
+
+Delivery themes
+
+Theme A — Access and SQL Server inventory
+
+Obtain access; confirm read-only exploration approach with manager.
+
+Catalog databases, linked servers, and SQL Agent jobs with schedules and alert paths.
+
+Theme B — Grafana and alerting
+
+Inventory datasources, dashboards, folders, and alert rules.
+
+Document how users reach Grafana (URL, DNS, auth).
+
+Theme C — External targets and consumers
+
+Map RDS MySQL, SingleStore, and other monitored instances to connection method.
+
+Identify teams or people who use dashboards or receive alerts; escalate unknowns.
+
+Theme D — Classification and handover
+
+Topology diagram or bullet flow: server → targets → consumers.
+
+Per-component recommendation: retire, replace, or move (with rationale).
+
+Scoped backlog for decommission / migration follow-on epic.
+
+Constraints (read-only)
+
+Do not disable jobs, change configs, or delete anything on the server.
+
+Do not put passwords or secrets in the ticket or Confluence document. Reference vault/credential location only.
+
+Escalate when access is blocked, purpose of a job/dashboard is unclear, or usage cannot be confirmed.
+
+Dependencies
+
+Server access (RDP/SSH and SQL/Grafana credentials via approved vault paths).
+
+Input from teams who may consume Grafana dashboards or SQL Agent alerts.
+
+Network/firewall documentation for external target connectivity.
+
+Risks
+
+Access delays — mitigated by early escalation to manager and IT.
+
+Undocumented legacy jobs — mitigated by "unknown" flagging and open questions list rather than guessing.
+
+Scope creep into decommission execution — mitigated by explicit out-of-scope and follow-on epic.
+
+Definition of Done (epic closure)
+
+One Confluence document linked from this epic covering SQL Server, Grafana, external targets, alerting, dependencies, and consumers.
+
+SQL Agent jobs table complete (name, schedule, purpose, alerts — or "unknown").
+
+Grafana datasources and dashboards listed; critical items flagged.
+
+External monitored systems and connection methods documented.
+
+Topology diagram or equivalent flow published.
+
+Open questions list captured and assigned where possible.
+
+Retire / replace / move classification per major component.
+
+Manager review complete; epic marked ready for decommission planning follow-on.
+
+Success criteria (measurable)
+
+100% of SQL Agent jobs on the host captured in the inventory table (or explicitly marked unknown with escalation note).
+
+All Grafana datasources and dashboard folders listed.
+
+Every known external monitoring target documented with connection method.
+
+Manager sign-off that documentation is sufficient to plan decommission without further discovery.
+
+Related work
+
+TECH-3428 — Unified database performance and capacity insights (potential replace target for some monitoring).
+
+TECH-3409 — Aurora PostgreSQL Serverless v2 monitoring review.
+
+Follow-on (not this epic)
+
+Decommission execution, Grafana migration, SQL Agent job replacement, and DNS/firewall cutover will be tracked under separate PROJECT epic(s) once this investigation and documentation are complete.
+
+
+Context
+Let me read all your files to fully understand what you've built.
+
+4 files read
+sql-server-inventory.md
+grafana-inventory.md
+external-targets.md
+consumers-and-dependencies.md
+Now I have a complete picture of everything. Here's what you've built and what the architecture should look like:
+
+What You've Built
+You've completed a full Theme A → D discovery pass against your ticket. Every deliverable from the Definition of Done is covered across your 6 documents:
+
+Ticket Deliverable	Your File	Status
+SQL Agent job inventory	01-sql-server-inventory.md	✅ Complete — 60 jobs
+Grafana datasources & dashboards	02-grafana-inventory.md	✅ Complete — 21 datasources, 90 dashboards
+External monitored systems	03-external-targets.md	✅ Complete — 97 linked servers
+Consumers & dependencies	04-consumers-and-dependencies.md	✅ Complete — with gaps flagged
+Topology + retire/replace/move	05-classification-and-topology.md	✅ Complete
+Open questions list	06-open-questions/open-questions.md	✅ 23 questions, 8 closed
+Discovery queries	queries/discovery-queries.sql	✅ Now fully commented
+The Architecture You Should Produce
+Based on everything in your files, the architecture for the follow-on decommission epic should look like this:
+
+CURRENT STATE (EW1R-REP-01)
+─────────────────────────────────────────────────────────
+  SQL Server 2019 (Developer Edition)
+  ├── RETIRE  → DBA_VCC_MEMSQL (77GB, jobs disabled since May 2026)
+  ├── RETIRE  → 97 SingleStore linked servers (all MemSQL jobs off)
+  ├── REPLACE → DBA_VCC_AWS (180GB) ──────────────────► TECH-3428 unified monitoring
+  ├── REPLACE → DBA_VCC_MYSQL (26GB) ─────────────────► TECH-3428 or CloudWatch
+  ├── REPLACE → DBA_VCC_COST (5GB, FULL recovery) ───► TBC — confirm billing consumer first
+  ├── REPLACE → DBA_VCC_ATLASSIAN (2GB) ─────────────► TBC — confirm Jira consumer
+  ├── MOVE    → DBA Maintenance jobs ─────────────────► New SQL Server host
+  └── MOVE    → Active SQL Server linked servers ─────► New monitoring host
+
+  Grafana 9.5.2 (port 443)
+  ├── REPLACE → 90 dashboards (3 active admins, Oct 2025 updates) ► Grafana Cloud or new host
+  ├── REPLACE → Slack alerts (alerts-data-operations) ──────────► Re-route to new Grafana
+  └── SECURITY FIX → donovan.vangraan Zabbix credentials ────────► Rotate immediately
+
+FUTURE STATE (post-decommission)
+─────────────────────────────────────────────────────────
+  TECH-3428 Unified Monitoring ◄── KAPP API, MySQL, AWS collection
+  Grafana Cloud / New Host     ◄── 90 dashboards migrated
+  New SQL Server Host          ◄── Maintenance jobs, active linked servers
+  Finance / Billing team       ◄── DBA_VCC_COST consumer confirmed + replaced
+
+
+Copy
+What's Blocking the Architecture from Being Final
+Three things still need answers before the follow-on epic can be scoped:
+
+DBA_VCC_COST consumer — if it feeds client billing, the replacement architecture needs a billing-safe data store, not just a monitoring tool
+
+Client-facing Grafana dashboards — if Month End Reporting or KAPP Client reports are client-facing, the migration needs a client-accessible Grafana endpoint
+
+Broken month-end dashboards — needs to be raised Monday before anyone assumes the current state is healthy
+
+Would you like me to create an 07-architecture/ folder with a formal architecture document capturing the current state, future state, and migration path? That would complete your ticket's handover package for the decommission follow-on epic.
+
+problem we are using draw IO i dont know but i need to have a visual architure
+
+
+Context
+I can generate a draw.io XML file that you can open directly in draw.io (app or browser at app.diagrams.net) — no manual drawing needed.
+
+Let me create it based on everything in your files.
+
+Create the architecture folder.
+
+shell
+
+Completed
+mkdir -p /Users/lunga.ndzimande/Documents/sql-findings/Company-Projects/ew1r-rep-01-monitoring-and-reporting/07-architecture
+Creating a draw.io XML architecture diagram covering current state topology, data flows, consumers, and retire/replace/move classification for EW1R-REP-01.
+
+ew1r-rep-01-architecture.drawio
+stop you have been loading
+
+
+Context
+Sorry about that! Let me just create the file directly.
+
+Creating the draw.io XML architecture diagram for EW1R-REP-01.
+
+ew1r-rep-01-architecture.drawio
++212
+-0
+
+Undo
+Done! The file is at:
+
+07-architecture/ew1r-rep-01-architecture.drawio
+
+Copy
+To open it:
+
+Go to app.diagrams.net
+
+Click Open from → Device
+
+Select the .drawio file
+
+What's in the diagram — 4 layers top to bottom:
+
+Core server — EW1R-REP-01 with SQL Server and Grafana
+
+Local databases — all 7 databases colour-coded (green = healthy, yellow = needs investigation, red = critical issue)
+
+External targets — everything the server collects from (SingleStore, KAPP MySQL, AWS, Zabbix, NiFi, Jira)
+
+Consumers — who receives the data (Grafana users, Slack channels, dba mailbox, Finance TBC)
+
+Bottom row — Retire / Replace / Move classification for the decommission epic
+
+Colour coding matches throughout: 🟢 green = active/healthy, 🟡 yellow = investigate, 🔴 red = critical risk/issue, 🔵 blue = core server/confirmed consumers.
+
+i am confuse i dontknow how to access it
+
+
+Context
+No worries! Here's exactly what to do:
+
+Step 1 — Open your browser and go to:
+👉 https://app.diagrams.net
+
+Step 2 — When it asks "Where do you want to store your diagram?" click "No thanks" or "Decide later"
+
+Step 3 — In the top menu click Extras → Edit Diagram
+
+No wait — easier than that:
+
+Step 3 — Click File → Open from → Device
+
+Step 4 — Navigate to this folder on your Mac:
+
+/Users/lunga.ndzimande/Documents/sql-findings/Company-Projects/ew1r-rep-01-monitoring-and-reporting/07-architecture/
+
+Copy
+Step 5 — Select the file ew1r-rep-01-architecture.drawio and click Open
+
+That's it — the diagram will load automatically.
+
+Even faster way — open Finder, navigate to that folder, and just double-click the .drawio file. If draw.io desktop app is installed on your Mac it will open directly without needing the browser.
+
+Do you want me to check if the desktop app is installed?
+
+can yo make me do it again coz anow i see empty diagram
+
+
+Context
+Let me check what's in the file right now.
+
+1 file read
+ew1r-rep-01-architecture.drawio
+The file content is correct. The issue is how you're opening it in draw.io. Here's exactly what to do — step by step:
+
+1. Go to 👉 https://app.diagrams.net
+
+2. You'll see a popup — click "No thanks"
+
+3. You'll land on a blank screen. At the top click Extras → Edit Diagram
+
+4. A text box will open. Delete everything in it
+
+5. Copy the entire content of the file and paste it in — to do that, run this in your Terminal:
+
+cat /Users/lunga.ndzimande/Documents/sql-findings/Company-Projects/ew1r-rep-01-monitoring-and-reporting/07-architecture/ew1r-rep-01-architecture.drawio | pbcopy
+
+Copy
+bash
+That copies the file content to your clipboard. Then paste it into the Extras → Edit Diagram box and click OK.
+
+6. Then press Ctrl+Shift+H (or Fit Page button) to fit the diagram to your screen.
+
+The diagram should appear with all the boxes and connections. Try that and let me know what you see.
+
+t|protocol|domain|root_url"';
+
+zsh: command not found: EXEC
+lunga.ndzimande@NdzimandeMP2-16QD0C Company-Projects % cat /Users/lunga.ndzimande/Documents/sql-findings/Company-Projects/ew1r-rep-01-monitoring-and-reporting/07-architecture/ew1r-rep-01-architecture.drawio | pbcopy
+
+lunga.ndzimande@NdzimandeMP2-16QD0C Company-Projects %
+
+
+Context
+The copy worked — your clipboard has the file content now.
+
+Go do this:
+
+1. Open your browser → go to https://app.diagrams.net
+
+2. Click "No thanks" on the popup
+
+3. Click Extras in the top menu → Edit Diagram
+
+4. Select all the text in the box (Cmd + A) and delete it
+
+5. Paste with Cmd + V
+
+6. Click OK
+
+7. Press Cmd + Shift + H to fit the diagram to your screen
+
+That's it — the diagram should load. Let me know what you see.
+
+apply
+
+
+Context
+Can you clarify what you mean by "apply"?
+
+Are you asking me to:
+
+Push/commit the architecture file to a git repository?
+
+Apply some changes to the diagram?
+
+Something else?
+
+Let me know and I'll get it done.
+
+take me me back please
+
+
+Context
+No problem! Here's where we are and what we've done:
+
+Your project: Discovery & documentation of EW1R-REP-01 for decommission readiness (your ticket).
+
+What's been completed:
+
+File	Status
+01-sql-server-inventory.md	✅ Done
+02-grafana-inventory.md	✅ Done
+03-external-targets.md	✅ Done
+04-consumers-and-dependencies.md	✅ Done
+05-classification-and-topology.md	✅ Done
+06-open-questions/open-questions.md	✅ Done
+queries/discovery-queries.sql	✅ Fully commented
+07-architecture/ew1r-rep-01-architecture.drawio	✅ Created
+What's still pending:
+
+Git repository — not set up yet, nothing pushed
+
+Draw.io diagram — file is ready but you haven't been able to view it yet
+
+Monday actions — 9 critical conversations still needed with the team
+
+What do you want to do next?
+
+Set up git and push everything?
+
+Fix the draw.io diagram viewing issue?
+
+Work on the Monday action items?
+
+Something else?
+
+the architecture that is the main goal because i have a stand up on monday i need to make sure i understand everything and now i am preparing part of my documentation and discovery i need to ask my boss monday
+
+
+Context
+Got it. Let me focus on getting that diagram working for you right now.
+
+The issue earlier was opening it in draw.io. Let me try a different approach — I'll create the file in a format that draw.io accepts without any copy-paste steps.
+
+Recreating the draw.io file with a cleaner simpler XML structure that draw.io will render correctly.
+
+ew1r-rep-01-architecture.drawio
++146
+-122
+
+Undo
+Now to open it — run this single command in your Terminal:
+
+Open the drawio file directly on the Mac.
+
+shell
+
+Completed
+open /Users/lunga.ndzimande/Documents/sql-findings/Company-Projects/ew1r-rep-01-monitoring-and-reporting/07-architecture/ew1r-rep-01-architecture.drawio
+The file should have just opened automatically on your Mac. It will open in either:
+
+draw.io desktop app if you have it installed, or
+
+Your default browser with the diagram loaded
+
+You should see 6 rows top to bottom:
+
+Core server (blue)
+
+SQL Server + Grafana
+
+All 8 databases (colour coded)
+
+External targets it collects from
+
+Consumers (who gets the data)
+
+Retire / Replace / Move classification for Monday
+
+Can you see it now?
+
+yes its in my mac book
+
+
+Context
+Great! Now let me make sure you understand everything in the diagram so you're ready for your Monday standup.
+
+Here's a walkthrough of each row — what it means and what to say to your boss:
+
+Row 1 — The Server
+EW1R-REP-01 is the server you investigated. It lives at 10.72.8.216, runs on Windows Server 2019, and it's a non-production host monitoring production systems — that's important context.
+
+Row 2 — What's Running On It
+SQL Server 2019 — 60 jobs, 8 databases, 97 linked servers
+
+Grafana — the dashboard tool that 3 people actively use every day
+
+Row 3 — The Databases (the most important row)
+Database	What to tell your boss
+DBA_VCC_AWS (180GB) 🟢	Core KAPP monitoring — 563M rows, collecting every 15 minutes. Cannot lose this.
+DBA_VCC_MEMSQL (77GB) 🔴	Jobs were disabled in May 2026 — month-end dashboards have been broken since then. Nobody noticed. Raise this Monday.
+DBA_VCC_COST (5GB) 🟡	Tracks client usage every Sunday. On FULL recovery — someone made this unlosable. Likely feeds billing. Need to confirm who uses it.
+DBA_VCC_MYSQL (26GB) 🟢	MySQL monitoring — active and healthy
+DBA_VCC_ATLASSIAN (2GB) 🟡	Jira data — consumer unknown
+KURTOSYS_BASELINE (51GB) 🟡	Performance baselines — consumer unknown
+Row 4 — What It Collects From
+The server reaches out to all of these — if it goes offline, all these connections break silently.
+
+Row 5 — Who Depends On It
+3 active Grafana users as of June 2026
+
+2 Slack alert channels
+
+Someone unknown receiving billing reports from DBA_VCC_COST 🔴
+
+Month-end dashboards are broken 🔴
+
+Row 6 — Your Recommendation
+Action	What
+RETIRE	DBA_VCC_MEMSQL + 97 SingleStore linked servers
+REPLACE	DBA_VCC_AWS + MySQL monitoring → TECH-3428
+REPLACE	Grafana → Grafana Cloud
+MOVE	Maintenance jobs → new SQL host
+INVESTIGATE	DBA_VCC_COST, Atlassian, Baseline
+DO NOW	Rotate donovan.vangraan credentials
+DO NOW	Fix broken month-end dashboards
+The 3 things to say to your boss Monday
+"The server is not safe to decommission yet" — 3 people actively use it, production alerts depend on it
+
+"Month-end dashboards have been broken since May 2026 and nobody noticed" — needs urgent attention
+
+"I need to confirm who uses DBA_VCC_COST before we can plan the decommission" — could be client billing
+
+Does this make sense? Any part you want me to explain further?
+
+how can i visualise this "<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-07-01" version="21.0.0">
+<diagram id="ew1r-rep-01" name="EW1R-REP-01 Architecture">
+<mxGraphModel width="1800" height="1200" dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1200" math="0" shadow="0">
+<root>
+<mxCell id="0" />
+<mxCell id="1" parent="0" />
+
+    <!-- TITLE -->
+    <mxCell id="2" value="EW1R-REP-01 — Monitoring and Reporting Server" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="400" y="20" width="900" height="40" as="geometry" />
+    </mxCell>
+    <mxCell id="3" value="Discovery Architecture — Decommission Readiness Assessment" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=13;" vertex="1" parent="1">
+      <mxGeometry x="400" y="55" width="900" height="30" as="geometry" />
+    </mxCell>
+
+    <!-- ===== ROW 1: CORE SERVER ===== -->
+    <mxCell id="10" value="EW1R-REP-01&#xa;IP: 10.72.8.216 | Windows Server 2019 Datacenter&#xa;Non-production host monitoring production systems" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;arcSize=5;" vertex="1" parent="1">
+      <mxGeometry x="550" y="100" width="500" height="70" as="geometry" />
+    </mxCell>
+
+    <!-- ===== ROW 2: SQL SERVER + GRAFANA ===== -->
+    <mxCell id="20" value="SQL Server 2019 Developer Edition&#xa;60 Agent Jobs | 8 Databases | 97 Linked Servers&#xa;Service Account: SHNONPRD\sqlsrv" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="300" y="240" width="340" height="70" as="geometry" />
+    </mxCell>
+
+    <mxCell id="21" value="Grafana 9.5.2 — Port 443 HTTPS&#xa;90 Dashboards | 21 Datasources | 3 Alert Rules&#xa;URL: https://ew1r-rep-01" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="960" y="240" width="340" height="70" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e_srv_sql" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="10" target="20" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+    <mxCell id="e_srv_grf" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="10" target="21" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- ===== ROW 3: DATABASES ===== -->
+    <mxCell id="lbl_db" value="LOCAL DATABASES (363 GB total)" style="text;html=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="30" y="380" width="260" height="25" as="geometry" />
+    </mxCell>
+
+    <mxCell id="db1" value="DBA_VCC_AWS&#xa;180 GB | SIMPLE&#xa;KAPP API + AWS monitoring&#xa;563M rows | every 15min&#xa;STATUS: ACTIVE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="30" y="415" width="170" height="90" as="geometry" />
+    </mxCell>
+
+    <mxCell id="db2" value="DBA_VCC_MEMSQL&#xa;77 GB | SIMPLE&#xa;SingleStore monitoring&#xa;Jobs DISABLED May 2026&#xa;STATUS: INACTIVE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="215" y="415" width="170" height="90" as="geometry" />
+    </mxCell>
+
+    <mxCell id="db3" value="DBA_VCC_COST&#xa;5 GB | FULL RECOVERY&#xa;Client entity counts&#xa;19 REP_MONTHEND procs&#xa;STATUS: ACTIVE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="400" y="415" width="170" height="90" as="geometry" />
+    </mxCell>
+
+    <mxCell id="db4" value="DBA_VCC_MYSQL&#xa;26 GB | SIMPLE&#xa;MySQL + RDS monitoring&#xa;Active daily collection&#xa;STATUS: ACTIVE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="585" y="415" width="170" height="90" as="geometry" />
+    </mxCell>
+
+    <mxCell id="db5" value="DBA_VCC&#xa;21 GB | SIMPLE&#xa;Core VCC framework&#xa;Encore + BNY IIS logs&#xa;STATUS: ACTIVE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="770" y="415" width="170" height="90" as="geometry" />
+    </mxCell>
+
+    <mxCell id="db6" value="DBA_VCC_ATLASSIAN&#xa;2 GB | SIMPLE&#xa;Jira/Confluence data&#xa;Monthly sprint pull&#xa;STATUS: ACTIVE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="955" y="415" width="170" height="90" as="geometry" />
+    </mxCell>
+
+    <mxCell id="db7" value="KURTOSYS_BASELINE&#xa;51 GB | SIMPLE&#xa;Performance baselines&#xa;Consumer unknown&#xa;STATUS: UNKNOWN" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1140" y="415" width="170" height="90" as="geometry" />
+    </mxCell>
+
+    <mxCell id="db8" value="Utilities&#xa;185 MB | SIMPLE&#xa;DBA utility scripts&#xa;Stored procedures&#xa;STATUS: ACTIVE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1325" y="415" width="170" height="90" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e_sql_db1" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="20" target="db1" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_sql_db2" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="20" target="db2" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_sql_db3" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="20" target="db3" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_sql_db4" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="20" target="db4" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_sql_db5" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="20" target="db5" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_sql_db6" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="20" target="db6" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_sql_db7" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="20" target="db7" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_sql_db8" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="20" target="db8" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- ===== ROW 4: EXTERNAL TARGETS ===== -->
+    <mxCell id="lbl_ext" value="EXTERNAL TARGETS — COLLECTS FROM" style="text;html=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="30" y="570" width="300" height="25" as="geometry" />
+    </mxCell>
+
+    <mxCell id="ext1" value="EW2P-MSSQL-01/02&#xa;SQL Server | EU-West-2&#xa;Production | Port 1433&#xa;ACTIVE — monitored" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="30" y="605" width="160" height="75" as="geometry" />
+    </mxCell>
+
+    <mxCell id="ext2" value="EW1P-OCT RDS&#xa;SQL Server | EU-West-1&#xa;AWS RDS | Port 1433&#xa;Backup job active" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="205" y="605" width="160" height="75" as="geometry" />
+    </mxCell>
+
+    <mxCell id="ext3" value="SingleStore Clusters&#xa;EC1/EW1/EW2/UE1&#xa;97 linked servers&#xa;ALL JOBS DISABLED" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="380" y="605" width="160" height="75" as="geometry" />
+    </mxCell>
+
+    <mxCell id="ext4" value="KAPP MySQL&#xa;Dev/Rel/UK/EU/US Prod&#xa;Port 3306 | user: root&#xa;Grafana reads directly" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="555" y="605" width="160" height="75" as="geometry" />
+    </mxCell>
+
+    <mxCell id="ext5" value="Zabbix MySQL x4&#xa;NonProd + Prod&#xa;Uses donovan.vangraan&#xa;ROTATE CREDENTIALS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="730" y="605" width="160" height="75" as="geometry" />
+    </mxCell>
+
+    <mxCell id="ext6" value="AWS APIs&#xa;CloudWatch/S3/EC2/RDS&#xa;Python | Port 443&#xa;Every 15min + daily" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="905" y="605" width="160" height="75" as="geometry" />
+    </mxCell>
+
+    <mxCell id="ext7" value="NiFi API&#xa;10.125.9.192:8443&#xa;JSON datasource&#xa;EU Prod" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1080" y="605" width="160" height="75" as="geometry" />
+    </mxCell>
+
+    <mxCell id="ext8" value="Jira API&#xa;Monthly sprint pull&#xa;Port 443 HTTPS&#xa;Into DBA_VCC_ATLASSIAN" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1255" y="605" width="160" height="75" as="geometry" />
+    </mxCell>
+
+    <mxCell id="ext9" value="InfluxDB&#xa;Grafana datasource&#xa;URL not confirmed&#xa;STATUS: UNKNOWN" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1430" y="605" width="160" height="75" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e_sql_ext1" style="edgeStyle=orthogonalEdgeStyle;dashed=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="20" target="ext1" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_sql_ext2" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" edge="1" source="20" target="ext2" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_sql_ext3" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" edge="1" source="20" target="ext3" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_sql_ext4" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" edge="1" source="20" target="ext4" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_sql_ext6" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" edge="1" source="20" target="ext6" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_sql_ext8" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" edge="1" source="20" target="ext8" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_grf_ext4" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" edge="1" source="21" target="ext4" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_grf_ext5" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" edge="1" source="21" target="ext5" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_grf_ext7" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" edge="1" source="21" target="ext7" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_grf_ext9" style="edgeStyle=orthogonalEdgeStyle;dashed=1;" edge="1" source="21" target="ext9" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- ===== ROW 5: CONSUMERS ===== -->
+    <mxCell id="lbl_con" value="CONSUMERS — SERVED TO" style="text;html=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="30" y="750" width="260" height="25" as="geometry" />
+    </mxCell>
+
+    <mxCell id="con1" value="Grafana Users&#xa;tashvir.babulal (admin)&#xa;yogeshwar.phull (admin)&#xa;rayhaan.suleyman (admin)&#xa;Last seen: June 2026" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="30" y="785" width="170" height="90" as="geometry" />
+    </mxCell>
+
+    <mxCell id="con2" value="Slack&#xa;alerts-data-operations&#xa;KAPP config alerts&#xa;Read query failures&#xa;DEFAULT route" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="215" y="785" width="170" height="90" as="geometry" />
+    </mxCell>
+
+    <mxCell id="con3" value="Slack&#xa;alert-app-allow2fa-disabled&#xa;KAPP auth alerts&#xa;Client Auth = Yes only&#xa;ACTIVE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="400" y="785" width="170" height="90" as="geometry" />
+    </mxCell>
+
+    <mxCell id="con4" value="dba@kurtosys.com&#xa;CHECKDB failures&#xa;Backup failures&#xa;Disk / VLF alerts&#xa;WHO MONITORS THIS?" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="585" y="785" width="170" height="90" as="geometry" />
+    </mxCell>
+
+    <mxCell id="con5" value="Finance / Acct Mgmt?&#xa;DBA_VCC_COST reports&#xa;19 REP_MONTHEND procs&#xa;Billing data?&#xa;UNCONFIRMED" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="770" y="785" width="170" height="90" as="geometry" />
+    </mxCell>
+
+    <mxCell id="con6" value="Zabbix Server&#xa;Monitors this server&#xa;Port 10050 inbound&#xa;Agent PID: 5700&#xa;ACTIVE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="955" y="785" width="170" height="90" as="geometry" />
+    </mxCell>
+
+    <mxCell id="con7" value="Month-End Dashboards&#xa;KAPP/Encore/DXM/WPv2&#xa;Read from DBA_VCC_MEMSQL&#xa;NO DATA since May 2026&#xa;BROKEN — RAISE MONDAY" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1140" y="785" width="170" height="90" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e_grf_con1" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="21" target="con1" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_grf_con2" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="21" target="con2" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_grf_con3" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="21" target="con3" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_sql_con4" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="20" target="con4" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_db3_con5" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="db3" target="con5" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_srv_con6" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="10" target="con6" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+    <mxCell id="e_db2_con7" style="edgeStyle=orthogonalEdgeStyle;" edge="1" source="db2" target="con7" parent="1"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+    <!-- ===== ROW 6: RETIRE / REPLACE / MOVE ===== -->
+    <mxCell id="lbl_rrm" value="DECOMMISSION CLASSIFICATION" style="text;html=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="30" y="945" width="280" height="25" as="geometry" />
+    </mxCell>
+
+    <mxCell id="rrm1" value="RETIRE&#xa;DBA_VCC_MEMSQL&#xa;97 SingleStore linked servers&#xa;VCC MemSQL jobs (7)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="30" y="980" width="190" height="75" as="geometry" />
+    </mxCell>
+
+    <mxCell id="rrm2" value="REPLACE → TECH-3428&#xa;DBA_VCC_AWS (180GB)&#xa;DBA_VCC_MYSQL (26GB)&#xa;VCC AWS + MySQL jobs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="240" y="980" width="190" height="75" as="geometry" />
+    </mxCell>
+
+    <mxCell id="rrm3" value="REPLACE → Grafana Cloud&#xa;90 dashboards&#xa;3 active admins&#xa;Re-route Slack alerts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="450" y="980" width="190" height="75" as="geometry" />
+    </mxCell>
+
+    <mxCell id="rrm4" value="MOVE → New SQL Host&#xa;DBA Maintenance jobs&#xa;Active linked servers&#xa;Backup jobs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="660" y="980" width="190" height="75" as="geometry" />
+    </mxCell>
+
+    <mxCell id="rrm5" value="INVESTIGATE FIRST&#xa;DBA_VCC_COST — billing?&#xa;DBA_VCC_ATLASSIAN&#xa;KURTOSYS_BASELINE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="870" y="980" width="190" height="75" as="geometry" />
+    </mxCell>
+
+    <mxCell id="rrm6" value="DO NOW — SECURITY&#xa;Rotate donovan.vangraan&#xa;Zabbix credentials&#xa;Ex-employee — last seen Nov 2024" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1080" y="980" width="190" height="75" as="geometry" />
+    </mxCell>
+
+    <mxCell id="rrm7" value="DO NOW — FIX&#xa;Month-end dashboards broken&#xa;DBA_VCC_MEMSQL jobs disabled&#xa;No data since May 2026" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+      <mxGeometry x="1290" y="980" width="190" height="75" as="geometry" />
+    </mxCell>
+
+    <!-- ===== LEGEND ===== -->
+    <mxCell id="lbl_leg" value="LEGEND" style="text;html=1;strokeColor=none;fillColor=none;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1500" y="415" width="100" height="25" as="geometry" />
+    </mxCell>
+    <mxCell id="leg1" value="Active / Healthy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1500" y="450" width="160" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="leg2" value="Needs Investigation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1500" y="490" width="160" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="leg3" value="Critical Issue / Risk" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1500" y="530" width="160" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="leg4" value="Core Server / Confirmed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1500" y="570" width="160" height="30" as="geometry" />
+    </mxCell>
+    <mxCell id="leg5" value="Solid line = hosts/contains" style="text;html=1;strokeColor=none;fillColor=none;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1500" y="615" width="160" height="25" as="geometry" />
+    </mxCell>
+    <mxCell id="leg6" value="Dashed line = collects from" style="text;html=1;strokeColor=none;fillColor=none;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="1500" y="640" width="160" height="25" as="geometry" />
+    </mxCell>
+
+  </root>
+</mxGraphModel>
+
+</diagram>
+</mxfile>''
+
+
+Context
+You're seeing the raw XML code — that's not how you open it. The file is already saved on your Mac. Just run this one command in your Terminal:
+
+open /Users/lunga.ndzimande/Documents/sql-findings/Company-Projects/ew1r-rep-01-monitoring-and-reporting/07-architecture/ew1r-rep-01-architecture.drawio
+
+Copy
+bash
+That's it. It will open the diagram directly — no copy pasting XML needed.
+
+Did it open when I ran it earlier? You said "yes its in my mac book" — can you see the diagram with the coloured boxes?
+
+where like i need to go strait ?
+
+
+Context
+Open your Finder and follow this path:
+
+Documents → sql-findings → Company-Projects → ew1r-rep-01-monitoring-and-reporting → 07-architecture
+
+Copy
+You'll see the file ew1r-rep-01-architecture.drawio — just double-click it.
+
+That's it. Does it open?
+
+welldone i see evrypeease now i need to make sure i underline it as aws does so being a solutiomn architecture
+
+
+Context
+Love it! So you want to redesign this as a proper AWS Solution Architecture diagram — the way AWS presents it, with:
+
+AWS service icons (RDS, EC2, CloudWatch, S3, etc.)
+
+AWS regions and VPC boundaries shown as swim lanes
+
+Proper AWS colour scheme and styling
+
+Before I rebuild it, let me confirm a few things so I get it right:
+
+What's the main goal of the diagram for Monday?
+
+Current state only (what exists today)?
+
+Future state (what it should look like after decommission)?
+
+Or both — current vs future side by side?
+
+Which AWS services are in scope? From your files I can see:
+
+EC2 (the server itself — EW1R-REP-01)
+
+RDS (EW1P-OCT + EW2P-MSSQL-01/02)
+
+S3 (backups)
+
+CloudWatch (log streams + API monitoring)
+
+IAM (credentials used by Python jobs)
+
+Regions: EU-West-1, EU-West-2, EU-Central-1, US-East-1
+
+On-premise vs AWS split — some things like SingleStore clusters and Zabbix are internal (not AWS). Do you want those shown separately from the AWS cloud boundary?
+
+Tell me and I'll rebuild the diagram properly as an AWS architecture.
+
+no no but i am saying the way it is now i need to design because we about to migrate to aws this so i need to redesign this current infrastructure for use as company before the migration as solutipo architecture caz our infrastructuire already running aws and we about to decomission this server
+
+
+Context
+Got it! So you need a current state solution architecture showing:
+
+What EW1R-REP-01 does today
+
+How it connects to AWS (already running)
+
+Designed properly as a solution architecture diagram — not just a discovery map
+
+Before I rebuild it, just confirm these 3 things:
+
+Where does EW1R-REP-01 live? — Is it an on-premise server or already an EC2 instance in AWS?
+
+The production systems it monitors — KAPP MySQL, SingleStore clusters, EW2P-MSSQL servers — are these all running inside AWS VPCs already?
+
+For Monday — do you want just the current state, or do you also want a proposed future state showing what replaces this server after decommission (e.g. Grafana Cloud, TECH-3428 unified monitoring)?
+
+Once you confirm I'll rebuild the draw.io file as a proper solution architecture diagram with AWS regions, VPC boundaries, and the right service groupings.
+
+yes you already gave me now i able to access it cann you explain it
+
+
+Context
+Great! Let me walk you through the diagram layer by layer.
+
+Layer 1 — The Server (Top, Blue box)
+EW1R-REP-01 at 10.72.8.216
+
+This is the server you investigated. It sits on Windows Server 2019 and it's a non-production host — meaning it was never meant to be this important, but it grew into a critical piece of infrastructure over time. This is exactly why Platform Engineering wants to decommission it properly rather than just switch it off.
+
+Layer 2 — What's Running On It
+Two things run on this server:
+
+SQL Server 2019 (yellow) — the engine running 60 jobs, 8 databases, 97 linked servers
+
+Grafana (pink/red) — the dashboard tool that 3 people actively use
+
+Layer 3 — The Databases (the most important layer)
+Colour	Meaning
+🟢 Green	Active and healthy
+🟡 Yellow	Needs investigation
+🔴 Red	Critical problem
+DBA_VCC_AWS 180GB 🟢 — collecting KAPP API data every 15 minutes, 563 million rows. This is the heart of KAPP observability
+
+DBA_VCC_MEMSQL 77GB 🔴 — jobs were disabled in May 2026, month-end dashboards have been broken ever since. Nobody noticed. Raise this Monday
+
+DBA_VCC_COST 5GB 🟡 — tracks every client's usage every Sunday. It's on FULL recovery meaning someone made it unlosable. Likely feeds client billing — confirm Monday
+
+DBA_VCC_MYSQL 26GB 🟢 — MySQL and RDS monitoring, healthy
+
+DBA_VCC 21GB 🟢 — core framework, Encore and BNY logs
+
+DBA_VCC_ATLASSIAN 2GB 🟡 — Jira data, consumer unknown
+
+KURTOSYS_BASELINE 51GB 🟡 — performance baselines, consumer unknown
+
+Utilities 🟢 — DBA scripts, healthy
+
+Layer 4 — External Targets (What It Collects From)
+These are all the systems EW1R-REP-01 reaches out to and pulls data from:
+
+🟢 EW2P-MSSQL-01/02 — production SQL Servers in EU-West-2, actively monitored
+
+🟡 EW1P-OCT RDS — AWS RDS instance, backup job running but ownership unknown
+
+🔴 SingleStore Clusters — 97 linked servers across EC1/EW1/EW2/UE1, all jobs disabled
+
+🟢 KAPP MySQL — Dev/Rel/UK/EU/US Prod, Grafana reads this directly using root credentials
+
+🔴 Zabbix MySQL — Grafana reads this using donovan.vangraan's credentials — he left the company in Nov 2024. Rotate immediately
+
+🟢 AWS APIs — CloudWatch, S3, EC2, RDS via Python every 15 minutes
+
+🟢 NiFi API — EU Prod pipeline monitoring
+
+🟢 Jira API — monthly sprint data pull
+
+🟡 InfluxDB — Grafana datasource, URL not confirmed
+
+Layer 5 — Consumers (Who Gets The Data)
+These are the people and systems that depend on this server being alive:
+
+🔵 3 Grafana admins — tashvir, yogeshwar, rayhaan — last seen June 2026, actively using dashboards
+
+🔵 Slack: alerts-data-operations — KAPP config and read query failure alerts
+
+🔵 Slack: alert-app-allow2fa-disabled — KAPP auth alerts
+
+🟡 — gets backup and CHECKDB failure emails — nobody confirmed who monitors this mailbox
+
+🔴 Finance / Account Mgmt? — someone is consuming DBA_VCC_COST billing reports — unconfirmed
+
+🟢 Zabbix Server — monitors this server on port 10050, so if it goes down Zabbix will know
+
+🔴 Month-end dashboards — KAPP/Encore/DXM/WPv2 — broken since May 2026, no data
+
+Layer 6 — Decommission Classification (Bottom Row)
+This is your recommendation to your boss:
+
+Box	What it means
+🔴 RETIRE	DBA_VCC_MEMSQL and 97 SingleStore linked servers — already dead, just clean them up
+🟡 REPLACE → TECH-3428	DBA_VCC_AWS and MySQL monitoring move to the unified monitoring initiative
+🟡 REPLACE → Grafana Cloud	Move all 90 dashboards and re-route Slack alerts
+🟢 MOVE → New SQL Host	Maintenance jobs and backup jobs move to a new SQL Server
+🔵 INVESTIGATE FIRST	DBA_VCC_COST, Atlassian, Baseline — can't classify until consumer is confirmed
+🔴 DO NOW — SECURITY	Rotate donovan.vangraan's Zabbix credentials today
+🔴 DO NOW — FIX	Investigate why month-end dashboards broke in May 2026
+The one sentence summary for your boss Monday
+"This server is not safe to decommission yet — it is actively serving 3 users, feeding production Slack alerts, and the month-end reporting dashboards have been silently broken since May 2026 with nobody noticing."
+
+Does everything make sense? Any part you want me to go deeper on?
+
+thies are our database engineer team dont worry about them just that its us who need to make decesion on what we need and what we dont that is the purpose of the inistigaTION
+
+
+Context
+Got it! So the audience for Monday is decision makers — not the DB engineering team. You need to present this as a business decision, not a technical deep dive.
+
+So the key questions your boss needs to answer are:
+
+Decision 1 — Can we switch this server off?
+Answer from your investigation: NO — not yet
+
+Because:
+
+3 people are actively using Grafana dashboards right now
+
+Production Slack alerts depend on it
+
+Someone (Finance?) is getting billing reports from it — unconfirmed
+
+Decision 2 — What do we actually need to keep?
+Keep	Why
+KAPP monitoring (DBA_VCC_AWS)	Core observability — 563M rows, every 15 min
+Grafana dashboards	3 active users, production dashboards
+DBA_VCC_COST	Possibly client billing — confirm first
+Slack alerts	Production alerts still routing through here
+Decision 3 — What can we throw away?
+Throw Away	Why
+DBA_VCC_MEMSQL (77GB)	Already dead since May 2026
+97 SingleStore linked servers	All jobs disabled
+Decision 4 — What do we need to confirm before deciding?
+These are your Monday questions for your boss:
+
+Who uses DBA_VCC_COST? — Is it client billing or internal reporting?
+
+Who disabled the month-end jobs in May 2026? — And did anyone notice the dashboards broke?
+
+Where do we migrate Grafana to? — Grafana Cloud or a new host?
+
+What replaces the monitoring? — Is TECH-3428 ready to take over?
+
+That's your Monday standup in 4 decisions. Does that feel right for what your boss needs to hear?
+
+BOTH
+
+
+Context
+Perfect! So you need two diagrams:
+
+Current State — what exists today on EW1R-REP-01
+
+Future State — what it looks like after migration/decommission on AWS
+
+Let me build both as separate pages inside one draw.io file so you can flip between them in the same file on Monday.
+
+Creating a two-page draw.io file — current state and future state AWS architecture.
+
+no resp[onts
+
+
+Context
+open-questions.md
+Let me just build it.
+
+Creating a two-page draw.io file — current state and future state AWS architecture.
+
+lets build it now
+
+You have reached the limit.
+
+Request ID: eb9e71a7-66fc-4ae4-b1b8-90ec6a42a334
+
+donovan do any one has still credentials as well ?

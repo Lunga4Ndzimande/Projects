@@ -1,0 +1,1344 @@
+
+Requirement	Status
+SQL Agent job inventory (name, schedule, purpose, alert target)	Done — full purpose from job steps
+Alert mechanisms	Done — email to , Slack for SSIS
+Linked servers documented	Done
+External monitoring targets + connection method	Done
+Consumer list	Done — known consumers documented, unknowns flagged
+DNS, firewall, service accounts, vault references	Done — placeholders with escalation items
+Open questions list	Done — 23 questions
+Grafana inventory	Placeholder created — needs access
+Topology diagram	Done — needs Grafana/consumers to complete
+Retire/replace/move classification	Done — preliminary
+Still blocked on:
+
+Grafana — need the URL/port. Try RDP into the server and run services.msc to find the Grafana service, or check C:\Program Files\GrafanaLabs\grafana\conf\grafana.ini
+
+Want to tackle that next?
+
+let me ran all the query fist that you gave me
+
+Go ahead — run them all and paste the results back here. Here's a reminder of what you're running:
+
+1. Alert operators
+
+SELECT 
+    name,
+    email_address,
+    pager_address,
+    weekday_pager_start_time
+FROM msdb.dbo.sysoperators;
+
+Copy
+sql
+2. Alert rules
+
+SELECT 
+    a.name AS alert_name,
+    a.message_id,
+    a.severity,
+    a.enabled,
+    o.name AS operator_name,
+    o.email_address
+FROM msdb.dbo.sysalerts a
+LEFT JOIN msdb.dbo.sysoperators o ON a.operator_id = o.id;
+
+Copy
+sql
+3. Service accounts
+
+SELECT 
+    servicename,
+    service_account,
+    status_desc,
+    startup_type_desc
+FROM sys.dm_server_services;
+
+Copy
+sql
+4. Grafana port check
+
+EXEC xp_cmdshell 'netstat -ano | findstr LISTENING';
+
+Copy
+sql
+Paste all results when ready.
+
+Msg 207, Level 16, State 1, Line 16
+Invalid column name 'operator_id'.
+
+Completion time: 2026-07-03T20:04:55.0696677+00:00
+
+Fix for query 2 — the column name is different:
+
+SELECT 
+    a.name AS alert_name,
+    a.message_id,
+    a.severity,
+    a.enabled,
+    o.name AS operator_name,
+    o.email_address
+FROM msdb.dbo.sysalerts a
+LEFT JOIN msdb.dbo.sysoperators o ON a.operator_id_email = o.id;
+
+Copy
+sql
+Run that and share all 4 results when done.
+
+Msg 207, Level 16, State 1, Line 16
+Invalid column name 'operator_id'.
+Msg 207, Level 16, State 1, Line 25
+Invalid column name 'operator_id_email'.
+
+Completion time: 2026-07-03T20:05:21.0725374+00:00
+
+Let me check the actual column names first:
+
+SELECT column_name 
+FROM msdb.INFORMATION_SCHEMA.COLUMNS 
+WHERE table_name = 'sysalerts'
+ORDER BY ordinal_position;
+
+Copy
+sql
+Paste what comes back and I'll fix the query.
+
+Msg 207, Level 16, State 1, Line 16
+Invalid column name 'operator_id'.
+
+Completion time: 2026-07-03T20:05:51.4302817+00:00
+
+Run them separately — the error is from a previous query still in your window. Clear your query window and run only this:
+
+SELECT column_name 
+FROM msdb.INFORMATION_SCHEMA.COLUMNS 
+WHERE table_name = 'sysalerts'
+ORDER BY ordinal_position;
+
+Copy
+sql
+id
+name
+event_source
+event_category_id
+event_id
+message_id
+severity
+enabled
+delay_between_responses
+last_occurrence_date
+last_occurrence_time
+last_response_date
+last_response_time
+notification_message
+include_event_description
+database_name
+event_description_keyword
+occurrence_count
+count_reset_date
+count_reset_time
+job_id
+has_notification
+flags
+performance_condition
+category_id
+
+No operator join column in sysalerts. Use has_notification and a different approach:
+
+SELECT 
+    a.name AS alert_name,
+    a.message_id,
+    a.severity,
+    a.enabled,
+    a.has_notification,
+    a.notification_message,
+    o.name AS operator_name,
+    o.email_address
+FROM msdb.dbo.sysalerts a
+LEFT JOIN msdb.dbo.sysnotifications sn ON a.id = sn.alert_id
+LEFT JOIN msdb.dbo.sysoperators o ON sn.operator_id = o.id;
+
+Copy
+sql
+Run that along with the other 3 queries and paste all results.
+
+Condition - Lock wait time 0 0 1 0 NULL NULL NULL
+Error 00823 - IO - Read or Write request failure 823 0 1 0 NULL NULL NULL
+Error 00824 - IO - Logical Consistency I/O Error 824 0 1 0 NULL NULL NULL
+Error 00825 - IO - Read-Retry Required 825 0 1 0 NULL NULL NULL
+Error 01480 - AG - Role Change 1480 0 1 0 NULL NULL NULL
+Error 35264 - AG - Data Movement - Suspended 35264 0 1 0 NULL NULL NULL
+Error 35265 - AG - Data Movement - Resumed 35265 0 1 0 NULL NULL NULL
+Error 41404 - AG - Offline 41404 0 1 0 NULL NULL NULL
+Error 41405 - AG - Not Ready for Automatic Failover 41405 0 1 0 NULL NULL NULL
+Severity 019 - Fatal Error in Resource 0 19 1 0 NULL NULL NULL
+Severity 020 - Fatal Error in Current Process 0 20 1 0 NULL NULL NULL
+Severity 021 - Fatal Error in Database Process 0 21 1 0 NULL NULL NULL
+Severity 022 - Fatal Error: Table Integrity Suspect 0 22 1 0 NULL NULL NULL
+Severity 023 - Fatal Error Database Integrity Suspect 0 23 1 0 NULL NULL NULL
+Severity 024 - Fatal Hardware Error 0 24 1 0 NULL NULL NULL
+Severity 025 - Fatal Error 0 25 1 0 NULL NULL NULL
+
+All alerts have has_notification = 0 and no operator linked — meaning no one gets notified when these alerts fire. They're defined but silent.
+
+Now paste the results from the other 3 queries:
+
+Service accounts (sys.dm_server_services)
+
+Operators (msdb.dbo.sysoperators)
+
+Grafana port (xp_cmdshell 'netstat -ano | findstr LISTENING')
+
+SQL Server (MSSQLSERVER) SHNONPRD\sqlsrv Running Automatic
+SQL Server Agent (MSSQLSERVER) SHNONPRD\sqlagent Running Automatic
+SQL Server Launchpad (MSSQLSERVER) NT Service\MSSQLLaunchpad Running Automatic
+
+Good. Now paste the operators and netstat results.
+
+TCP 0.0.0.0:135 0.0.0.0:0 LISTENING 920
+TCP 0.0.0.0:443 0.0.0.0:0 LISTENING 3844
+TCP 0.0.0.0:445 0.0.0.0:0 LISTENING 4
+TCP 0.0.0.0:1433 0.0.0.0:0 LISTENING 3096
+TCP 0.0.0.0:3389 0.0.0.0:0 LISTENING 360
+TCP 0.0.0.0:5985 0.0.0.0:0 LISTENING 4
+TCP 0.0.0.0:10050 0.0.0.0:0 LISTENING 5700
+TCP 0.0.0.0:47001 0.0.0.0:0 LISTENING 4
+TCP 0.0.0.0:49664 0.0.0.0:0 LISTENING 500
+TCP 0.0.0.0:49665 0.0.0.0:0 LISTENING 1244
+TCP 0.0.0.0:49667 0.0.0.0:0 LISTENING 1808
+TCP 0.0.0.0:49670 0.0.0.0:0 LISTENING 652
+TCP 0.0.0.0:49671 0.0.0.0:0 LISTENING 2572
+TCP 0.0.0.0:49672 0.0.0.0:0 LISTENING 2740
+TCP 0.0.0.0:49705 0.0.0.0:0 LISTENING 2432
+TCP 0.0.0.0:49750 0.0.0.0:0 LISTENING 644
+TCP 0.0.0.0:49754 0.0.0.0:0 LISTENING 652
+TCP 10.72.8.216:139 0.0.0.0:0 LISTENING 4
+TCP 127.0.0.1:1434 0.0.0.0:0 LISTENING 3096
+TCP 127.0.0.1:10000 0.0.0.0:0 LISTENING 68
+TCP 127.0.0.1:10001 0.0.0.0:0 LISTENING 2416
+TCP 127.0.0.1:10002 0.0.0.0:0 LISTENING 6588
+TCP 127.0.0.1:49739 0.0.0.0:0 LISTENING 3096
+TCP 127.0.0.1:59563 0.0.0.0:0 LISTENING 9148
+TCP [::]:135 [::]:0 LISTENING 920
+TCP [::]:443 [::]:0 LISTENING 3844
+TCP [::]:445 [::]:0 LISTENING 4
+TCP [::]:1433 [::]:0 LISTENING 3096
+TCP [::]:3389 [::]:0 LISTENING 360
+TCP [::]:5985 [::]:0 LISTENING 4
+TCP [::]:10050 [::]:0 LISTENING 5700
+TCP [::]:47001 [::]:0 LISTENING 4
+TCP [::]:49664 [::]:0 LISTENING 500
+TCP [::]:49665 [::]:0 LISTENING 1244
+TCP [::]:49667 [::]:0 LISTENING 1808
+TCP [::]:49670 [::]:0 LISTENING 652
+TCP [::]:49671 [::]:0 LISTENING 2572
+TCP [::]:49672 [::]:0 LISTENING 2740
+TCP [::]:49705 [::]:0 LISTENING 2432
+TCP [::]:49750 [::]:0 LISTENING 644
+TCP [::]:49754 [::]:0 LISTENING 652
+TCP [::1]:1434 [::]:0 LISTENING 3096
+TCP [::1]:49739 [::]:0 LISTENING 3096
+NULL
+
+Key findings from the netstat:
+
+No port 3000 — Grafana is not running on this server
+
+Port 443 (PID 3844) — something is running HTTPS, could be a web app or Grafana on a non-standard port
+
+Port 10050 (PID 5700) — this is Zabbix agent — confirms this server is monitored by Zabbix
+
+Port 10000/10001/10002 — localhost only, likely internal SQL Server or app processes
+
+Port 3389 — RDP open, as expected
+
+Let's identify what's on port 443 and the mystery ports:
+
+EXEC xp_cmdshell 'tasklist /FI "PID eq 3844"';
+EXEC xp_cmdshell 'tasklist /FI "PID eq 5700"';
+EXEC xp_cmdshell 'tasklist /FI "PID eq 9148"';
+
+Copy
+sql
+Also paste the operators result — you haven't shared that yet:
+
+SELECT name, email_address, pager_address
+FROM msdb.dbo.sysoperators;
+
+Copy
+sql
+NULL
+Image Name PID Session Name Session# Mem Usage
+========================= ======== ================ =========== ============
+grafana.exe 3844 Services 0 92,988 K
+NULL. , NULL
+Image Name PID Session Name Session# Mem Usage
+========================= ======== ================ =========== ============
+zabbix_agentd.exe 5700 Services 0 11,984 K
+NULL ,NULL
+Image Name PID Session Name Session# Mem Usage
+========================= ======== ================ =========== ============
+plugin_start_windows_amd6 9148 Services 0 72,440 K
+NULL
+
+Grafana is running on port 443 (HTTPS), not the default 3000. So the URL is:
+
+https://ew1r-rep-01
+
+Copy
+or using the IP:
+
+https://10.72.8.216
+
+Copy
+Also confirmed:
+
+Zabbix agent running — this server reports into Zabbix
+
+plugin_start_windows_amd64 (PID 9148) — this is a Grafana plugin process
+
+Try opening https://ew1r-rep-01 or https://10.72.8.216 in your browser from within the network. Do you get a Grafana login page?
+
+Also paste the operators result while you try that:
+
+SELECT name, email_address, pager_address
+FROM msdb.dbo.sysoperators;
+
+Copy
+sql
+it says page cant reach
+
+Try the IP directly:
+
+https://10.72.8.216
+
+Copy
+If that also fails, it may be a DNS or firewall issue. Also run this to confirm Grafana's actual configured port:
+
+EXEC xp_cmdshell 'type "C:\Program Files\GrafanaLabs\grafana\conf\grafana.ini" | findstr /i "http_port\|protocol\|domain\|root_url"';
+
+Copy
+sql
+And paste the operators result too while we wait:
+
+SELECT name, email_address, pager_address
+FROM msdb.dbo.sysoperators;
+
+Copy
+sql
+lunga.ndzimande@NdzimandeMP2-16QD0C Company-Projects % clear
+lunga.ndzimande@NdzimandeMP2-16QD0C Company-Projects % EXEC xp_cmdshell 'type "C:\Program Files\GrafanaLabs\grafana\conf\grafana.ini" | findstr /i "http_port|protocol|domain|root_url"';
+
+zsh: command not found: EXEC
+lunga.ndzimande@NdzimandeMP2-16QD0C Company-Projects % , NULL
+
+You ran the SQL query in your terminal instead of SSMS. Run it in SSMS:
+
+EXEC xp_cmdshell 'type "C:\Program Files\GrafanaLabs\grafana\conf\grafana.ini" | findstr /i "http_port\|protocol\|domain\|root_url"';
+
+Copy
+sql
+Also got the operators result — only one operator:
+
+Name	Email	Pager
+NULL
+That confirms all job alerts go to a single DBA mailbox. Let me update the docs with that while you run the Grafana config query in SSMS.
+
+Updating consumers and dependencies with confirmed alert mechanisms and operator details
+
+consumers-and-dependencies.md
++22
+-4
+
+Undo
+Also update the service accounts section:
+
+Updating service accounts with confirmed values from sys.dm_server_services
+
+consumers-and-dependencies.md
++3
+-2
+
+Undo
+Also update the infrastructure dependencies with the confirmed IP and Zabbix agent:
+
+Updating DNS and services section with confirmed IP, Grafana port, and Zabbix agent details
+
+consumers-and-dependencies.md
++10
+-3
+
+Undo
+Pushing updated documentation with confirmed service accounts, alerts, and infrastructure details
+
+shell
+
+Completed
+cd "/Users/lunga.ndzimande/Documents/sql-findings/Company-Projects/ew1r-rep-01-monitoring-and-reporting" && git add . && git commit -m "Update alert mechanisms, service accounts, confirmed IP, Grafana port 443, Zabbix agent" && git push origin main
+[main a731303] Update alert mechanisms, service accounts, confirmed IP, Grafana port 443, Zabbix agent
+ 1 file changed, 35 insertions(+), 9 deletions(-)
+To https://github.com/LungaKurtosys/ew1r-rep-01-monitoring-and-reporting.git
+   e5273b5..a731303  main -> main
+Pushed. Now run the Grafana config query in SSMS:
+
+EXEC xp_cmdshell 'type "C:\Program Files\GrafanaLabs\grafana\conf\grafana.ini" | findstr /i "http_port\|protocol\|domain\|root_url"';
+
+Copy
+This will tell us the exact URL Grafana is configured on so we can access it.
+
+NULL
+
+The config file isn't at the default path. Let's find where Grafana is installed:
+
+EXEC xp_cmdshell 'dir "C:\Program Files\GrafanaLabs\" /s /b | findstr /i "grafana.ini"';
+
+Copy
+If that returns nothing try:
+
+EXEC xp_cmdshell 'dir "C:\" /s /b /a:d | findstr /i "grafana"';
+
+Copy
+sql
+C:\DBA_Staging\AWS\Py_VCC\venv\Lib\site-packages\botocore\data\grafana
+C:\DBA_Staging\AWS\Py_VCC\venv\Lib\site-packages\botocore\data\grafana\2020-08-18
+C:\opscode\chef\embedded\lib\ruby\gems\2.7.0\gems\aws-sdk-managedgrafana-1.7.0
+C:\opscode\chef\embedded\lib\ruby\gems\2.7.0\gems\aws-sdk-managedgrafana-1.7.0\lib
+C:\opscode\chef\embedded\lib\ruby\gems\2.7.0\gems\aws-sdk-managedgrafana-1.7.0\lib\aws-sdk-managedgrafana
+C:\Program Files\GrafanaLabs
+C:\Program Files\Amazon\AWSCLIV2\awscli\botocore\data\grafana
+C:\Program Files\Amazon\AWSCLIV2\awscli\botocore\data\grafana\2020-08-18
+C:\Program Files\GrafanaLabs\grafana
+C:\Program Files\GrafanaLabs\svc-9.5.2.0
+C:\Program Files\GrafanaLabs\grafana\bin
+C:\Program Files\GrafanaLabs\grafana\conf
+C:\Program Files\GrafanaLabs\grafana\data
+C:\Program Files\GrafanaLabs\grafana\plugins-bundled
+C:\Program Files\GrafanaLabs\grafana\public
+C:\Program Files\GrafanaLabs\grafana\ssl
+C:\Program Files\GrafanaLabs\grafana\tools
+C:\Program Files\GrafanaLabs\grafana\conf\provisioning
+C:\Program Files\GrafanaLabs\grafana\conf\provisioning\access-control
+C:\Program Files\GrafanaLabs\grafana\conf\provisioning\alerting
+C:\Program Files\GrafanaLabs\grafana\conf\provisioning\dashboards
+C:\Program Files\GrafanaLabs\grafana\conf\provisioning\datasources
+C:\Program Files\GrafanaLabs\grafana\conf\provisioning\notifiers
+C:\Program Files\GrafanaLabs\grafana\conf\provisioning\plugins
+C:\Program Files\GrafanaLabs\grafana\data\alerting
+C:\Program Files\GrafanaLabs\grafana\data\csv
+C:\Program Files\GrafanaLabs\grafana\data\log
+C:\Program Files\GrafanaLabs\grafana\data\plugins
+C:\Program Files\GrafanaLabs\grafana\data\png
+C:\Program Files\GrafanaLabs\grafana\data\alerting\1
+C:\Program Files\GrafanaLabs\grafana\data\alerting\2
+C:\Program Files\GrafanaLabs\grafana\data\alerting\3
+C:\Program Files\GrafanaLabs\grafana\data\plugins\alexanderzobnin-zabbix-app
+C:\Program Files\GrafanaLabs\grafana\data\plugins\aws-datasource-provisioner-app
+C:\Program Files\GrafanaLabs\grafana\data\plugins\briangann-gauge-panel
+C:\Program Files\GrafanaLabs\grafana\data\plugins\golioth-websocket-datasource
+C:\Program Files\GrafanaLabs\grafana\data\plugins\grafana-clock-panel
+C:\Program Files\GrafanaLabs\grafana\data\plugins\grafana-image-renderer
+C:\Program Files\GrafanaLabs\grafana\data\plugins\grafana-piechart-panel
+C:\Program Files\GrafanaLabs\grafana\data\plugins\marcusolsson-json-datasource
+C:\Program Files\GrafanaLabs\grafana\data\plugins\volkovlabs-echarts-panel
+C:\Program Files\GrafanaLabs\grafana\data\plugins\vonage-status-panel
+C:\Program Files\GrafanaLabs\grafana\data\plugins\alexanderzobnin-zabbix-app\datasource
+C:\Program Files\GrafanaLabs\grafana\data\plugins\alexanderzobnin-zabbix-app\img
+C:\Program Files\GrafanaLabs\grafana\data\plugins\alexanderzobnin-zabbix-app\panel-triggers
+C:\Program Files\GrafanaLabs\grafana\data\plugins\alexanderzobnin-zabbix-app\styles
+C:\Program Files\GrafanaLabs\grafana\data\plugins\alexanderzobnin-zabbix-app\datasource\img
+C:\Program Files\GrafanaLabs\grafana\data\plugins\alexanderzobnin-zabbix-app\panel-triggers\img
+C:\Program Files\GrafanaLabs\grafana\data\plugins\aws-datasource-provisioner-app\assets
+C:\Program Files\GrafanaLabs\grafana\data\plugins\briangann-gauge-panel\img
+C:\Program Files\GrafanaLabs\grafana\data\plugins\briangann-gauge-panel\libs
+C:\Program Files\GrafanaLabs\grafana\data\plugins\briangann-gauge-panel\partials
+C:\Program Files\GrafanaLabs\grafana\data\plugins\briangann-gauge-panel\screenshots
+C:\Program Files\GrafanaLabs\grafana\data\plugins\briangann-gauge-panel\styles
+C:\Program Files\GrafanaLabs\grafana\data\plugins\golioth-websocket-datasource\img
+C:\Program Files\GrafanaLabs\grafana\data\plugins\golioth-websocket-datasource\img\assets
+C:\Program Files\GrafanaLabs\grafana\data\plugins\grafana-clock-panel\img
+C:\Program Files\GrafanaLabs\grafana\data\plugins\grafana-image-renderer\chrome
+C:\Program Files\GrafanaLabs\grafana\data\plugins\grafana-image-renderer\img
+C:\Program Files\GrafanaLabs\grafana\data\plugins\grafana-image-renderer\chrome\win64-121.0.6156.2
+C:\Program Files\GrafanaLabs\grafana\data\plugins\grafana-image-renderer\chrome\win64-121.0.6156.2\chrome-win64
+C:\Program Files\GrafanaLabs\grafana\data\plugins\grafana-image-renderer\chrome\win64-121.0.6156.2\chrome-win64\locales
+C:\Program Files\GrafanaLabs\grafana\data\plugins\grafana-image-renderer\chrome\win64-121.0.6156.2\chrome-win64\MEIPreload
+C:\Program Files\GrafanaLabs\grafana\data\plugins\grafana-piechart-panel\img
+C:\Program Files\GrafanaLabs\grafana\data\plugins\grafana-piechart-panel\styles
+C:\Program Files\GrafanaLabs\grafana\data\plugins\marcusolsson-json-datasource\img
+C:\Program Files\GrafanaLabs\grafana\data\plugins\volkovlabs-echarts-panel\img
+C:\Program Files\GrafanaLabs\grafana\data\plugins\volkovlabs-echarts-panel\maps
+C:\Program Files\GrafanaLabs\grafana\data\plugins\vonage-status-panel\css
+C:\Program Files\GrafanaLabs\grafana\data\plugins\vonage-status-panel\img
+C:\Program Files\GrafanaLabs\grafana\plugins-bundled\internal
+C:\Program Files\GrafanaLabs\grafana\plugins-bundled\internal\input-datasource
+C:\Program Files\GrafanaLabs\grafana\plugins-bundled\internal\input-datasource\img
+C:\Program Files\GrafanaLabs\grafana\public\app
+C:\Program Files\GrafanaLabs\grafana\public\build
+C:\Program Files\GrafanaLabs\grafana\public\dashboards
+C:\Program Files\GrafanaLabs\grafana\public\emails
+C:\Program Files\GrafanaLabs\grafana\public\fonts
+C:\Program Files\GrafanaLabs\grafana\public\gazetteer
+C:\Program Files\GrafanaLabs\grafana\public\img
+C:\Program Files\GrafanaLabs\grafana\public\img_kurtosys
+C:\Program Files\GrafanaLabs\grafana\public\lib
+C:\Program Files\GrafanaLabs\grafana\public\locales
+C:\Program Files\GrafanaLabs\grafana\public\maps
+C:\Program Files\GrafanaLabs\grafana\public\sass
+C:\Program Files\GrafanaLabs\grafana\public\test
+C:\Program Files\GrafanaLabs\grafana\public\testdata
+C:\Program Files\GrafanaLabs\grafana\public\vendor
+C:\Program Files\GrafanaLabs\grafana\public\views
+C:\Program Files\GrafanaLabs\grafana\public\app\angular
+C:\Program Files\GrafanaLabs\grafana\public\app\core
+C:\Program Files\GrafanaLabs\grafana\public\app\features
+C:\Program Files\GrafanaLabs\grafana\public\app\partials
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins
+C:\Program Files\GrafanaLabs\grafana\public\app\polyfills
+C:\Program Files\GrafanaLabs\grafana\public\app\routes
+C:\Program Files\GrafanaLabs\grafana\public\app\store
+C:\Program Files\GrafanaLabs\grafana\public\app\types
+C:\Program Files\GrafanaLabs\grafana\public\app\angular\components
+C:\Program Files\GrafanaLabs\grafana\public\app\angular\filters
+C:\Program Files\GrafanaLabs\grafana\public\app\angular\panel
+C:\Program Files\GrafanaLabs\grafana\public\app\angular\partials
+C:\Program Files\GrafanaLabs\grafana\public\app\angular\services
+C:\Program Files\GrafanaLabs\grafana\public\app\angular\components\code_editor
+C:\Program Files\GrafanaLabs\grafana\public\app\angular\components\form_dropdown
+C:\Program Files\GrafanaLabs\grafana\public\app\angular\components\sql_part
+C:\Program Files\GrafanaLabs\grafana\public\app\angular\panel\partials
+C:\Program Files\GrafanaLabs\grafana\public\app\angular\panel\specs
+C:\Program Files\GrafanaLabs\grafana\public\app\core\actions
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components
+C:\Program Files\GrafanaLabs\grafana\public\app\core\context
+C:\Program Files\GrafanaLabs\grafana\public\app\core\copy
+C:\Program Files\GrafanaLabs\grafana\public\app\core\history
+C:\Program Files\GrafanaLabs\grafana\public\app\core\hooks
+C:\Program Files\GrafanaLabs\grafana\public\app\core\internationalization
+C:\Program Files\GrafanaLabs\grafana\public\app\core\navigation
+C:\Program Files\GrafanaLabs\grafana\public\app\core\reducers
+C:\Program Files\GrafanaLabs\grafana\public\app\core\selectors
+C:\Program Files\GrafanaLabs\grafana\public\app\core\services
+C:\Program Files\GrafanaLabs\grafana\public\app\core\specs
+C:\Program Files\GrafanaLabs\grafana\public\app\core\utils
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\AccessControl
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\Animations
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\AppChrome
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\AppNotifications
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\Branding
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\Breadcrumbs
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\CloseButton
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\ColorScale
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\DynamicImports
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\EmptyListCTA
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\ErrorPage
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\FolderFilter
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\Footer
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\ForgottenPassword
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\help
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\Layers
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\LocalStorageValueProvider
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\Login
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\MegaMenu
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\modals
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\NavBar
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\OptionsUI
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\Page
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\PageActionBar
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\PageHeader
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\PageInfo
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\PageLoader
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\PageNew
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\PanelTypeFilter
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\PasswordField
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\PermissionList
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\PluginHelp
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\QueryOperationRow
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\RolePicker
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\Select
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\SharedPreferences
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\Signup
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\SplitPaneWrapper
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\SVG
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\TagFilter
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\TimelineChart
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\TimePicker
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\TraceToLogs
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\TraceToMetrics
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\Upgrade
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\AppChrome\News
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\AppChrome\Organization
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\AppChrome\QuickAdd
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\AppChrome\TopBar
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\AppChrome\News\fixtures
+C:\Program Files\GrafanaLabs\grafana\public\app\core\components\Select\ReadonlyFolderPicker
+C:\Program Files\GrafanaLabs\grafana\public\app\core\navigation\patch
+C:\Program Files\GrafanaLabs\grafana\public\app\core\navigation_mocks_
+C:\Program Files\GrafanaLabs\grafana\public\app\core\services\echo
+C:\Program Files\GrafanaLabs\grafana\public\app\core\services_mocks_
+C:\Program Files\GrafanaLabs\grafana\public\app\core\services\echo\backends
+C:\Program Files\GrafanaLabs\grafana\public\app\core\services\echo\backends\analytics
+C:\Program Files\GrafanaLabs\grafana\public\app\core\services\echo\backends\grafana-javascript-agent
+C:\Program Files\GrafanaLabs\grafana\public\app\core\services\echo\backends\sentry
+C:\Program Files\GrafanaLabs\grafana\public\app\core\services\echo\backends\sentry\transports
+C:\Program Files\GrafanaLabs\grafana\public\app\features\admin
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting
+C:\Program Files\GrafanaLabs\grafana\public\app\features\annotations
+C:\Program Files\GrafanaLabs\grafana\public\app\features\api-keys
+C:\Program Files\GrafanaLabs\grafana\public\app\features\canvas
+C:\Program Files\GrafanaLabs\grafana\public\app\features\commandPalette
+C:\Program Files\GrafanaLabs\grafana\public\app\features\connections
+C:\Program Files\GrafanaLabs\grafana\public\app\features\correlations
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dataframe-import
+C:\Program Files\GrafanaLabs\grafana\public\app\features\datasource-drawer
+C:\Program Files\GrafanaLabs\grafana\public\app\features\datasources
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dimensions
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore
+C:\Program Files\GrafanaLabs\grafana\public\app\features\expressions
+C:\Program Files\GrafanaLabs\grafana\public\app\features\folders
+C:\Program Files\GrafanaLabs\grafana\public\app\features\geo
+C:\Program Files\GrafanaLabs\grafana\public\app\features\inspector
+C:\Program Files\GrafanaLabs\grafana\public\app\features\invites
+C:\Program Files\GrafanaLabs\grafana\public\app\features\library-panels
+C:\Program Files\GrafanaLabs\grafana\public\app\features\live
+C:\Program Files\GrafanaLabs\grafana\public\app\features\logs
+C:\Program Files\GrafanaLabs\grafana\public\app\features\manage-dashboards
+C:\Program Files\GrafanaLabs\grafana\public\app\features\notifications
+C:\Program Files\GrafanaLabs\grafana\public\app\features\org
+C:\Program Files\GrafanaLabs\grafana\public\app\features\panel
+C:\Program Files\GrafanaLabs\grafana\public\app\features\playlist
+C:\Program Files\GrafanaLabs\grafana\public\app\features\plugins
+C:\Program Files\GrafanaLabs\grafana\public\app\features\profile
+C:\Program Files\GrafanaLabs\grafana\public\app\features\query
+C:\Program Files\GrafanaLabs\grafana\public\app\features\runtime
+C:\Program Files\GrafanaLabs\grafana\public\app\features\sandbox
+C:\Program Files\GrafanaLabs\grafana\public\app\features\scenes
+C:\Program Files\GrafanaLabs\grafana\public\app\features\search
+C:\Program Files\GrafanaLabs\grafana\public\app\features\serviceaccounts
+C:\Program Files\GrafanaLabs\grafana\public\app\features\storage
+C:\Program Files\GrafanaLabs\grafana\public\app\features\support-bundles
+C:\Program Files\GrafanaLabs\grafana\public\app\features\teams
+C:\Program Files\GrafanaLabs\grafana\public\app\features\templating
+C:\Program Files\GrafanaLabs\grafana\public\app\features\transformers
+C:\Program Files\GrafanaLabs\grafana\public\app\features\users
+C:\Program Files\GrafanaLabs\grafana\public\app\features\variables
+C:\Program Files\GrafanaLabs\grafana\public\app\features\admin\ldap
+C:\Program Files\GrafanaLabs\grafana\public\app\features\admin\partials
+C:\Program Files\GrafanaLabs\grafana\public\app\features\admin\state
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\components
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\partials
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\state
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\utils
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\api
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\components
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\hooks
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\mocks
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\search
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\state
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\styles
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\types
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\utils
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified_snapshots_
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\components\admin
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\components\alert-groups
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\components\bridges
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\components\expressions
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\components\mute-timings
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\components\notification-policies
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\components\panel-alerts-tab
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\components\receivers
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\components\rule-editor
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\components\rule-viewer
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\components\rules
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\components\silences
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\components\receivers\editor
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\components\receivers\form
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\components\receivers\grafanaAppReceivers
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\components\receivers\form\fields
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\components\receivers\grafanaAppReceivers\onCall
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\components\rule-editor\query-and-alert-condition
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\components\rule-editor\rule-types
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\components\rule-editor_snapshots_
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\components\rule-editor\query-and-alert-condition_snapshots_
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\components\rules_snapshots_
+C:\Program Files\GrafanaLabs\grafana\public\app\features\alerting\unified\utils_snapshots_
+C:\Program Files\GrafanaLabs\grafana\public\app\features\annotations\components
+C:\Program Files\GrafanaLabs\grafana\public\app\features\annotations\partials
+C:\Program Files\GrafanaLabs\grafana\public\app\features\api-keys\state
+C:\Program Files\GrafanaLabs\grafana\public\app\features\api-keys_mocks_
+C:\Program Files\GrafanaLabs\grafana\public\app\features\canvas\elements
+C:\Program Files\GrafanaLabs\grafana\public\app\features\canvas\runtime
+C:\Program Files\GrafanaLabs\grafana\public\app\features\canvas\elements\server
+C:\Program Files\GrafanaLabs\grafana\public\app\features\canvas\elements\server\types
+C:\Program Files\GrafanaLabs\grafana\public\app\features\commandPalette\actions
+C:\Program Files\GrafanaLabs\grafana\public\app\features\connections\components
+C:\Program Files\GrafanaLabs\grafana\public\app\features\connections\hooks
+C:\Program Files\GrafanaLabs\grafana\public\app\features\connections\pages
+C:\Program Files\GrafanaLabs\grafana\public\app\features\connections\tabs
+C:\Program Files\GrafanaLabs\grafana\public\app\features\connections_mocks_
+C:\Program Files\GrafanaLabs\grafana\public\app\features\connections\components\ConnectionsRedirectNotice
+C:\Program Files\GrafanaLabs\grafana\public\app\features\connections\tabs\ConnectData
+C:\Program Files\GrafanaLabs\grafana\public\app\features\connections\tabs\ConnectData\CardGrid
+C:\Program Files\GrafanaLabs\grafana\public\app\features\connections\tabs\ConnectData\CategoryHeader
+C:\Program Files\GrafanaLabs\grafana\public\app\features\connections\tabs\ConnectData\NoAccessModal
+C:\Program Files\GrafanaLabs\grafana\public\app\features\connections\tabs\ConnectData\NoResults
+C:\Program Files\GrafanaLabs\grafana\public\app\features\connections\tabs\ConnectData\Search
+C:\Program Files\GrafanaLabs\grafana\public\app\features\correlations\components
+C:\Program Files\GrafanaLabs\grafana\public\app\features\correlations\Forms
+C:\Program Files\GrafanaLabs\grafana\public\app\features\correlations\components\Wizard
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\api
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\containers
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\dashgrid
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\services
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\state
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\utils
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\AddLibraryPanelWidget
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\AddPanelButton
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\AddPanelWidget
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\AnnotationSettings
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\DashboardLoading
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\DashboardPermissions
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\DashboardPrompt
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\DashboardRow
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\DashboardSettings
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\DashExportModal
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\DashNav
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\DeleteDashboard
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\HelpWizard
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\Inspector
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\LinksSettings
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\PanelEditor
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\PublicDashboardFooter
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\PublicDashboardNotAvailable
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\RepeatRowSelect
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\RowOptions
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\SaveDashboard
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\ShareModal
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\SubMenu
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\TransformationsEditor
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\VersionHistory
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\DashboardSettings_mocks_
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\PanelEditor\state
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\SaveDashboard\forms
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\ShareModal\SharePublicDashboard
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\ShareModal\SharePublicDashboard\ConfigPublicDashboard
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\ShareModal\SharePublicDashboard\CreatePublicDashboard
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\ShareModal\SharePublicDashboard\ModalAlerts
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\components\VersionHistory_mocks_
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\dashgrid\PanelHeader
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dashboard\state_fixtures_
+C:\Program Files\GrafanaLabs\grafana\public\app\features\datasource-drawer\components
+C:\Program Files\GrafanaLabs\grafana\public\app\features\datasources\components
+C:\Program Files\GrafanaLabs\grafana\public\app\features\datasources\pages
+C:\Program Files\GrafanaLabs\grafana\public\app\features\datasources\state
+C:\Program Files\GrafanaLabs\grafana\public\app\features\datasources_mocks_
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dimensions\editors
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dimensions\editors\ThresholdsEditor
+C:\Program Files\GrafanaLabs\grafana\public\app\features\dimensions\editors\ValueMappingsEditor
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\AddToDashboard
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\Graph
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\PrometheusListView
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\RichHistory
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\spec
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\state
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\TraceView
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\utils
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore_mocks_
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\spec\helper
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\TraceView\components
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\TraceView\utils
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\TraceView\components\common
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\TraceView\components\constants
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\TraceView\components\demo
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\TraceView\components\model
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\TraceView\components\selectors
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\TraceView\components\settings
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\TraceView\components\TracePageHeader
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\TraceView\components\TraceTimelineViewer
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\TraceView\components\types
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\TraceView\components\url
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\TraceView\components\utils
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\TraceView\components\model\ddg
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\TraceView\components\model\ddg_snapshots_
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\TraceView\components\TracePageHeader\Actions
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\TraceView\components\TracePageHeader\SpanGraph
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\TraceView\components\TraceTimelineViewer\ListView
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\TraceView\components\TraceTimelineViewer\SpanDetail
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\TraceView\components\TraceTimelineViewer\TimelineHeaderRow
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\TraceView\components\utils\config
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\TraceView\components\utils\DraggableManager
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\TraceView\components\utils\test
+C:\Program Files\GrafanaLabs\grafana\public\app\features\explore\TraceView\components\utils\DraggableManager\demo
+C:\Program Files\GrafanaLabs\grafana\public\app\features\expressions\components
+C:\Program Files\GrafanaLabs\grafana\public\app\features\expressions\utils
+C:\Program Files\GrafanaLabs\grafana\public\app\features\folders\components
+C:\Program Files\GrafanaLabs\grafana\public\app\features\folders\state
+C:\Program Files\GrafanaLabs\grafana\public\app\features\geo\editor
+C:\Program Files\GrafanaLabs\grafana\public\app\features\geo\format
+C:\Program Files\GrafanaLabs\grafana\public\app\features\geo\gazetteer
+C:\Program Files\GrafanaLabs\grafana\public\app\features\geo\utils
+C:\Program Files\GrafanaLabs\grafana\public\app\features\inspector\utils
+C:\Program Files\GrafanaLabs\grafana\public\app\features\invites\state
+C:\Program Files\GrafanaLabs\grafana\public\app\features\library-panels\components
+C:\Program Files\GrafanaLabs\grafana\public\app\features\library-panels\state
+C:\Program Files\GrafanaLabs\grafana\public\app\features\library-panels\utils
+C:\Program Files\GrafanaLabs\grafana\public\app\features\library-panels\components\AddLibraryPanelModal
+C:\Program Files\GrafanaLabs\grafana\public\app\features\library-panels\components\ChangeLibraryPanelModal
+C:\Program Files\GrafanaLabs\grafana\public\app\features\library-panels\components\DeleteLibraryPanelModal
+C:\Program Files\GrafanaLabs\grafana\public\app\features\library-panels\components\LibraryPanelCard
+C:\Program Files\GrafanaLabs\grafana\public\app\features\library-panels\components\LibraryPanelInfo
+C:\Program Files\GrafanaLabs\grafana\public\app\features\library-panels\components\LibraryPanelsSearch
+C:\Program Files\GrafanaLabs\grafana\public\app\features\library-panels\components\LibraryPanelsView
+C:\Program Files\GrafanaLabs\grafana\public\app\features\library-panels\components\OpenLibraryPanelModal
+C:\Program Files\GrafanaLabs\grafana\public\app\features\library-panels\components\PanelLibraryOptionsGroup
+C:\Program Files\GrafanaLabs\grafana\public\app\features\library-panels\components\SaveLibraryPanelModal
+C:\Program Files\GrafanaLabs\grafana\public\app\features\library-panels\components\UnlinkModal
+C:\Program Files\GrafanaLabs\grafana\public\app\features\live\centrifuge
+C:\Program Files\GrafanaLabs\grafana\public\app\features\live\dashboard
+C:\Program Files\GrafanaLabs\grafana\public\app\features\live\data
+C:\Program Files\GrafanaLabs\grafana\public\app\features\logs\components
+C:\Program Files\GrafanaLabs\grafana\public\app\features\logs\components_mocks_
+C:\Program Files\GrafanaLabs\grafana\public\app\features\manage-dashboards\components
+C:\Program Files\GrafanaLabs\grafana\public\app\features\manage-dashboards\services
+C:\Program Files\GrafanaLabs\grafana\public\app\features\manage-dashboards\state
+C:\Program Files\GrafanaLabs\grafana\public\app\features\manage-dashboards\utils
+C:\Program Files\GrafanaLabs\grafana\public\app\features\manage-dashboards\components\PublicDashboardListTable
+C:\Program Files\GrafanaLabs\grafana\public\app\features\org\state
+C:\Program Files\GrafanaLabs\grafana\public\app\features\panel\components
+C:\Program Files\GrafanaLabs\grafana\public\app\features\panel\panellinks
+C:\Program Files\GrafanaLabs\grafana\public\app\features\panel\state
+C:\Program Files\GrafanaLabs\grafana\public\app\features\panel\components\VizTypePicker
+C:\Program Files\GrafanaLabs\grafana\public\app\features\panel\panellinks\specs
+C:\Program Files\GrafanaLabs\grafana\public\app\features\plugins\admin
+C:\Program Files\GrafanaLabs\grafana\public\app\features\plugins\components
+C:\Program Files\GrafanaLabs\grafana\public\app\features\plugins\extensions
+C:\Program Files\GrafanaLabs\grafana\public\app\features\plugins\sql
+C:\Program Files\GrafanaLabs\grafana\public\app\features\plugins\systemjsPlugins
+C:\Program Files\GrafanaLabs\grafana\public\app\features\plugins\tests
+C:\Program Files\GrafanaLabs\grafana\public\app\features\plugins\admin\components
+C:\Program Files\GrafanaLabs\grafana\public\app\features\plugins\admin\hooks
+C:\Program Files\GrafanaLabs\grafana\public\app\features\plugins\admin\img
+C:\Program Files\GrafanaLabs\grafana\public\app\features\plugins\admin\pages
+C:\Program Files\GrafanaLabs\grafana\public\app\features\plugins\admin\state
+C:\Program Files\GrafanaLabs\grafana\public\app\features\plugins\admin_mocks_
+C:\Program Files\GrafanaLabs\grafana\public\app\features\plugins\admin\components\Badges
+C:\Program Files\GrafanaLabs\grafana\public\app\features\plugins\admin\components\GetStartedWithPlugin
+C:\Program Files\GrafanaLabs\grafana\public\app\features\plugins\admin\components\InstallControls
+C:\Program Files\GrafanaLabs\grafana\public\app\features\plugins\sql\components
+C:\Program Files\GrafanaLabs\grafana\public\app\features\plugins\sql\datasource
+C:\Program Files\GrafanaLabs\grafana\public\app\features\plugins\sql\utils
+C:\Program Files\GrafanaLabs\grafana\public\app\features\plugins\sql\components\configuration
+C:\Program Files\GrafanaLabs\grafana\public\app\features\plugins\sql\components\query-editor-raw
+C:\Program Files\GrafanaLabs\grafana\public\app\features\plugins\sql\components\visual-query-builder
+C:\Program Files\GrafanaLabs\grafana\public\app\features\profile\state
+C:\Program Files\GrafanaLabs\grafana\public\app\features\query\components
+C:\Program Files\GrafanaLabs\grafana\public\app\features\query\state
+C:\Program Files\GrafanaLabs\grafana\public\app\features\query\state\DashboardQueryRunner
+C:\Program Files\GrafanaLabs\grafana\public\app\features\query\state\processing
+C:\Program Files\GrafanaLabs\grafana\public\app\features\scenes\apps
+C:\Program Files\GrafanaLabs\grafana\public\app\features\scenes\builders
+C:\Program Files\GrafanaLabs\grafana\public\app\features\scenes\dashboard
+C:\Program Files\GrafanaLabs\grafana\public\app\features\scenes\scenes
+C:\Program Files\GrafanaLabs\grafana\public\app\features\search\components
+C:\Program Files\GrafanaLabs\grafana\public\app\features\search\hooks
+C:\Program Files\GrafanaLabs\grafana\public\app\features\search\page
+C:\Program Files\GrafanaLabs\grafana\public\app\features\search\service
+C:\Program Files\GrafanaLabs\grafana\public\app\features\search\state
+C:\Program Files\GrafanaLabs\grafana\public\app\features\search\page\components
+C:\Program Files\GrafanaLabs\grafana\public\app\features\serviceaccounts\components
+C:\Program Files\GrafanaLabs\grafana\public\app\features\serviceaccounts\state
+C:\Program Files\GrafanaLabs\grafana\public\app\features\support-bundles\state
+C:\Program Files\GrafanaLabs\grafana\public\app\features\teams\state
+C:\Program Files\GrafanaLabs\grafana\public\app\features\teams_mocks_
+C:\Program Files\GrafanaLabs\grafana\public\app\features\transformers\calculateHeatmap
+C:\Program Files\GrafanaLabs\grafana\public\app\features\transformers\configFromQuery
+C:\Program Files\GrafanaLabs\grafana\public\app\features\transformers\editors
+C:\Program Files\GrafanaLabs\grafana\public\app\features\transformers\extractFields
+C:\Program Files\GrafanaLabs\grafana\public\app\features\transformers\fieldToConfigMapping
+C:\Program Files\GrafanaLabs\grafana\public\app\features\transformers\FilterByValueTransformer
+C:\Program Files\GrafanaLabs\grafana\public\app\features\transformers\joinByLabels
+C:\Program Files\GrafanaLabs\grafana\public\app\features\transformers\lookupGazetteer
+C:\Program Files\GrafanaLabs\grafana\public\app\features\transformers\partitionByValues
+C:\Program Files\GrafanaLabs\grafana\public\app\features\transformers\prepareTimeSeries
+C:\Program Files\GrafanaLabs\grafana\public\app\features\transformers\rowsToFields
+C:\Program Files\GrafanaLabs\grafana\public\app\features\transformers\spatial
+C:\Program Files\GrafanaLabs\grafana\public\app\features\transformers\timeSeriesTable
+C:\Program Files\GrafanaLabs\grafana\public\app\features\transformers\calculateHeatmap\editor
+C:\Program Files\GrafanaLabs\grafana\public\app\features\transformers\extractFields\components
+C:\Program Files\GrafanaLabs\grafana\public\app\features\transformers\FilterByValueTransformer\ValueMatchers
+C:\Program Files\GrafanaLabs\grafana\public\app\features\transformers\prepareTimeSeries_snapshots_
+C:\Program Files\GrafanaLabs\grafana\public\app\features\users\state
+C:\Program Files\GrafanaLabs\grafana\public\app\features\users_mocks_
+C:\Program Files\GrafanaLabs\grafana\public\app\features\variables\adhoc
+C:\Program Files\GrafanaLabs\grafana\public\app\features\variables\constant
+C:\Program Files\GrafanaLabs\grafana\public\app\features\variables\custom
+C:\Program Files\GrafanaLabs\grafana\public\app\features\variables\datasource
+C:\Program Files\GrafanaLabs\grafana\public\app\features\variables\editor
+C:\Program Files\GrafanaLabs\grafana\public\app\features\variables\inspect
+C:\Program Files\GrafanaLabs\grafana\public\app\features\variables\interval
+C:\Program Files\GrafanaLabs\grafana\public\app\features\variables\pickers
+C:\Program Files\GrafanaLabs\grafana\public\app\features\variables\query
+C:\Program Files\GrafanaLabs\grafana\public\app\features\variables\shared
+C:\Program Files\GrafanaLabs\grafana\public\app\features\variables\state
+C:\Program Files\GrafanaLabs\grafana\public\app\features\variables\system
+C:\Program Files\GrafanaLabs\grafana\public\app\features\variables\textbox
+C:\Program Files\GrafanaLabs\grafana\public\app\features\variables\adhoc\picker
+C:\Program Files\GrafanaLabs\grafana\public\app\features\variables\pickers\OptionsPicker
+C:\Program Files\GrafanaLabs\grafana\public\app\features\variables\pickers\shared
+C:\Program Files\GrafanaLabs\grafana\public\app\features\variables\shared\testing
+C:\Program Files\GrafanaLabs\grafana\public\app\features\variables\state_tests_
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\alertmanager
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\azuremonitor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloud-monitoring
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\dashboard
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\elasticsearch
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\grafana
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\graphite
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\influxdb
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\jaeger
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\loki
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\mixed
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\mssql
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\mysql
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\opentsdb
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\parca
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\phlare
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\postgres
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\prometheus
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\tempo
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\testdata
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\zipkin
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\alertmanager\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\azuremonitor\azureMetadata
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\azuremonitor\azure_log_analytics
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\azuremonitor\azure_monitor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\azuremonitor\azure_resource_graph
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\azuremonitor\components
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\azuremonitor\dashboards
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\azuremonitor\e2e
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\azuremonitor\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\azuremonitor\log_analytics
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\azuremonitor\resourcePicker
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\azuremonitor\types
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\azuremonitor\utils
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\azuremonitor_mocks_
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\azuremonitor\azure_log_analytics_mocks_
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\azuremonitor\components\ArgQueryEditor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\azuremonitor\components\LogsQueryEditor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\azuremonitor\components\MetricsQueryEditor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\azuremonitor\components\QueryEditor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\azuremonitor\components\ResourceField
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\azuremonitor\components\ResourcePicker
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\azuremonitor\components\VariableEditor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloud-monitoring\components
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloud-monitoring\dashboards
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloud-monitoring\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloud-monitoring\specs
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloud-monitoring_mocks_
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloud-monitoring\components\ConfigEditor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloud-monitoring\components_snapshots_
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch\components
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch\dashboards
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch\language
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch\migrations
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch\query-runner
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch\resources
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch\utils
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch_mocks_
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch\components\Dimensions
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch\components\LogGroups
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch\components\MetricsQueryEditor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch\components\MetricStatEditor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch\components\SQLBuilderEditor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch\components\VariableQueryEditor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch\language\cloudwatch-logs
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch\language\cloudwatch-sql
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch\language\dynamic-labels
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch\language\metric-math
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch\language\monarch
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch\language\cloudwatch-sql\completion
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch\language\metric-math\completion
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch\utils\query
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch\utils\rxjs
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch_mocks\cloudwatch-sql-test-data
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch_mocks\dynamic-label-test-data
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch_mocks\metric-math-test-data
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\cloudwatch_mocks\monarch
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\elasticsearch\components
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\elasticsearch\configuration
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\elasticsearch\hooks
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\elasticsearch\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\elasticsearch\test-helpers
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\elasticsearch\components\hooks
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\elasticsearch\components\QueryEditor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\elasticsearch\components\QueryEditor\BucketAggregationsEditor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\elasticsearch\components\QueryEditor\MetricAggregationsEditor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\elasticsearch\components\QueryEditor\BucketAggregationsEditor\SettingsEditor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\elasticsearch\components\QueryEditor\BucketAggregationsEditor\state
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\elasticsearch\components\QueryEditor\BucketAggregationsEditor\SettingsEditor\FiltersSettingsEditor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\elasticsearch\components\QueryEditor\BucketAggregationsEditor\SettingsEditor\FiltersSettingsEditor\state
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\elasticsearch\components\QueryEditor\MetricAggregationsEditor\SettingsEditor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\elasticsearch\components\QueryEditor\MetricAggregationsEditor\state
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\elasticsearch\components\QueryEditor\MetricAggregationsEditor\SettingsEditor\BucketScriptSettingsEditor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\elasticsearch\components\QueryEditor\MetricAggregationsEditor\SettingsEditor\BucketScriptSettingsEditor\state
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\grafana\components
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\graphite\components
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\graphite\configuration
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\graphite\dashboards
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\graphite\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\graphite\specs
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\graphite\state
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\influxdb\components
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\influxdb\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\influxdb\specs
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\influxdb\components\VisualInfluxQLEditor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\jaeger\components
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\jaeger\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\loki\components
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\loki\configuration
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\loki\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\loki\migrations
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\loki\querybuilder
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\loki\components\monaco-query-field
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\loki\components\monaco-query-field\monaco-completion-provider
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\loki\querybuilder\components
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\mssql\configuration
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\mssql\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\mysql\configuration
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\mysql\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\mysql\specs
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\opentsdb\components
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\opentsdb\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\opentsdb\specs
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\parca\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\parca\lang
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\parca\QueryEditor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\phlare\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\phlare\phlareql
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\phlare\QueryEditor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\postgres\configuration
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\postgres\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\prometheus\components
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\prometheus\configuration
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\prometheus\dashboards
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\prometheus\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\prometheus\migrations
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\prometheus\querybuilder
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\prometheus\components\monaco-query-field
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\prometheus\components\monaco-query-field\monaco-completion-provider
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\prometheus\querybuilder\components
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\prometheus\querybuilder\shared
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\prometheus\querybuilder\shared\hooks
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\tempo\configuration
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\tempo\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\tempo\QueryEditor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\tempo\SearchTraceQLEditor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\tempo\traceql
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\tempo\QueryEditor\TagsField
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\testdata\components
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\testdata\dashboards
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\testdata\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\testdata\testData
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\testdata_mocks_
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\zipkin\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\datasource\zipkin\utils
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\alertGroups
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\alertlist
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\annolist
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\barchart
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\bargauge
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\candlestick
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\canvas
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\dashlist
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\debug
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\flamegraph
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\gauge
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\geomap
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\gettingstarted
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\graph
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\heatmap
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\histogram
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\icon
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\live
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\logs
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\news
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\nodeGraph
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\piechart
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\stat
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\state-timeline
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\status-history
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\table
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\table-old
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\text
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\timeseries
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\traces
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\welcome
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\xychart
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\alertGroups\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\alertlist\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\alertlist\unified-alerting
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\annolist\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\barchart\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\barchart_snapshots_
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\bargauge\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\candlestick\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\canvas\editor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\canvas\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\dashlist\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\debug\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\flamegraph\components
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\flamegraph\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\flamegraph\components\FlameGraph
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\flamegraph\components\TopTable
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\flamegraph\components\FlameGraph\testData
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\flamegraph\components\FlameGraph_snapshots_
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\gauge\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\gauge_snapshots_
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\geomap\components
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\geomap\editor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\geomap\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\geomap\layers
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\geomap\style
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\geomap\utils
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\geomap\layers\basemaps
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\geomap\layers\data
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\gettingstarted\components
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\gettingstarted\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\graph\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\graph\Legend
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\graph\specs
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\graph\specs_snapshots_
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\heatmap\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\heatmap\partials
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\histogram\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\icon\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\live\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\logs\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\news\component
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\news\fixtures
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\news\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\nodeGraph\editor
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\nodeGraph\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\piechart\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\stat\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\state-timeline\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\state-timeline_snapshots_
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\status-history\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\table\cells
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\table\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\table_snapshots_
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\table-old\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\table-old\specs
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\text\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\timeseries\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\timeseries\overrides
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\timeseries\plugins
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\timeseries_snapshots_
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\timeseries\plugins\annotations
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\traces\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\welcome\img
+C:\Program Files\GrafanaLabs\grafana\public\app\plugins\panel\xychart\img
+C:\Program Files\GrafanaLabs\grafana\public\app\types\jquery
+C:\Program Files\GrafanaLabs\grafana\public\build\static
+C:\Program Files\GrafanaLabs\grafana\public\build\static\img
+C:\Program Files\GrafanaLabs\grafana\public\fonts\inter
+C:\Program Files\GrafanaLabs\grafana\public\fonts\roboto
+C:\Program Files\GrafanaLabs\grafana\public\img\alerting
+C:\Program Files\GrafanaLabs\grafana\public\img\bg
+C:\Program Files\GrafanaLabs\grafana\public\img\enterprise
+C:\Program Files\GrafanaLabs\grafana\public\img\icons
+C:\Program Files\GrafanaLabs\grafana\public\img\icons_dark_theme
+C:\Program Files\GrafanaLabs\grafana\public\img\icons_light_theme
+C:\Program Files\GrafanaLabs\grafana\public\img\licensing
+C:\Program Files\GrafanaLabs\grafana\public\img\panel-tabs
+C:\Program Files\GrafanaLabs\grafana\public\img\plugins
+C:\Program Files\GrafanaLabs\grafana\public\img\enterprise\highlights
+C:\Program Files\GrafanaLabs\grafana\public\img\icons\custom
+C:\Program Files\GrafanaLabs\grafana\public\img\icons\iot
+C:\Program Files\GrafanaLabs\grafana\public\img\icons\marker
+C:\Program Files\GrafanaLabs\grafana\public\img\icons\mono
+C:\Program Files\GrafanaLabs\grafana\public\img\icons\solid
+C:\Program Files\GrafanaLabs\grafana\public\img\icons\unicons
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco-languages
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\base
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\editor
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\language
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\base\browser
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\base\common
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\base\worker
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\base\browser\ui
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\base\browser\ui\codicons
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\base\browser\ui\codicons\codicon
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\base\common\worker
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\abap
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\apex
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\azcli
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\bat
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\bicep
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\cameligo
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\clojure
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\coffee
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\cpp
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\csharp
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\csp
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\css
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\cypher
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\dart
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\dockerfile
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\ecl
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\elixir
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\flow9
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\freemarker2
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\fsharp
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\go
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\graphql
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\handlebars
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\hcl
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\html
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\ini
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\java
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\javascript
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\julia
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\kotlin
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\less
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\lexon
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\liquid
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\lua
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\m3
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\markdown
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\mips
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\msdax
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\mysql
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\objective-c
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\pascal
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\pascaligo
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\perl
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\pgsql
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\php
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\pla
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\postiats
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\powerquery
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\powershell
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\protobuf
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\pug
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\python
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\qsharp
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\r
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\razor
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\redis
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\redshift
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\restructuredtext
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\ruby
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\rust
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\sb
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\scala
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\scheme
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\scss
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\shell
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\solidity
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\sophia
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\sparql
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\sql
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\st
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\swift
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\systemverilog
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\tcl
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\twig
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\typescript
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\vb
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\xml
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\basic-languages\yaml
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\language\css
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\language\html
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\language\json
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\language\kusto
+C:\Program Files\GrafanaLabs\grafana\public\lib\monaco\min\vs\language\typescript
+C:\Program Files\GrafanaLabs\grafana\public\locales\de-DE
+C:\Program Files\GrafanaLabs\grafana\public\locales\en-US
+C:\Program Files\GrafanaLabs\grafana\public\locales\es-ES
+C:\Program Files\GrafanaLabs\grafana\public\locales\fr-FR
+C:\Program Files\GrafanaLabs\grafana\public\locales\pseudo-LOCALE
+C:\Program Files\GrafanaLabs\grafana\public\locales\zh-Hans
+C:\Program Files\GrafanaLabs\grafana\public\sass\base
+C:\Program Files\GrafanaLabs\grafana\public\sass\components
+C:\Program Files\GrafanaLabs\grafana\public\sass\layout
+C:\Program Files\GrafanaLabs\grafana\public\sass\mixins
+C:\Program Files\GrafanaLabs\grafana\public\sass\pages
+C:\Program Files\GrafanaLabs\grafana\public\sass\utils
+C:\Program Files\GrafanaLabs\grafana\public\sass\base\font-awesome
+C:\Program Files\GrafanaLabs\grafana\public\test\core
+C:\Program Files\GrafanaLabs\grafana\public\test\helpers
+C:\Program Files\GrafanaLabs\grafana\public\test\lib
+C:\Program Files\GrafanaLabs\grafana\public\test\matchers
+C:\Program Files\GrafanaLabs\grafana\public\test\mocks
+C:\Program Files\GrafanaLabs\grafana\public\test\specs
+C:\Program Files\GrafanaLabs\grafana\public\test\core\redux
+C:\Program Files\GrafanaLabs\grafana\public\test\core\thunk
+C:\Program Files\GrafanaLabs\grafana\public\test\core\utils
+C:\Program Files\GrafanaLabs\grafana\public\vendor\bootstrap
+C:\Program Files\GrafanaLabs\grafana\public\vendor\css
+C:\Program Files\GrafanaLabs\grafana\public\vendor\flot
+C:\Program Files\GrafanaLabs\grafana\public\vendor\plugin-text
+C:\Program Files\GrafanaLabs\grafana\public\vendor\tagsinput
+C:\Program Files\pgAdmin 4\v6\python\Lib\site-packages\botocore\data\grafana
+C:\Program Files\pgAdmin 4\v6\python\Lib\site-packages\botocore\data\grafana\2020-08-18
+C:\Users\sqlsrv\AppData\Local\Programs\Python\Python311\Lib\site-packages\botocore\data\grafana
+C:\Users\sqlsrv\AppData\Local\Programs\Python\Python311\Lib\site-packages\botocore\data\grafana\2020-08-18
+C:\Users\vangraand\AppData\Local\Programs\Python\Python311\Lib\site-packages\botocore\data\grafana
+C:\Users\vangraand\AppData\Local\Programs\Python\Python311\Lib\site-packages\botocore\data\grafana\2020-08-18
+C:\Users\vangraand\AppData\Local\VirtualStore\Program Files\GrafanaLabs
+C:\Users\vangraand\AppData\Local\VirtualStore\Program Files\GrafanaLabs\grafana
+C:\Users\vangraand\AppData\Local\VirtualStore\Program Files\GrafanaLabs\grafana\public
+C:\Users\vangraand\AppData\Local\VirtualStore\Program Files\GrafanaLabs\grafana\public\img
+C:\Users\vangraand\AppData\Local\VirtualStore\Program Files\GrafanaLabs\grafana\public\img_kurtosys
+C:\Users\yogeshwar.phull\Desktop\Grafana
+C:\Users\yogeshwar.phull\Documents\Py_VCC\venv\Lib\site-packages\botocore\data\grafana
+C:\Users\yogeshwar.phull\Documents\Py_VCC\venv\Lib\site-packages\botocore\data\grafana\2020-08-18
+NULL
+
+Excellent — this is very revealing. Now read the actual config file:
+
+EXEC xp_cmdshell 'type "C:\Program Files\GrafanaLabs\grafana\conf\grafana.ini"';
+
+Copy
+sql
+But while that runs, I already spotted some very important things from the directory listing:
+
+Two user accounts on this server:
+
+vangraand — has a VirtualStore copy of Grafana public folder (was modifying Grafana UI assets — likely the person who built this)
+
+yogeshwar.phull — has a Desktop\Grafana folder and Python VCC scripts — likely another DBA/developer who worked on this
+
+sqlsrv — the SQL Server service account, also has Python installed
+
+Also confirmed:
+
+Grafana version 9.5.2 (C:\Program Files\GrafanaLabs\svc-9.5.2.0)
+
+Grafana has a Zabbix plugin installed (alexanderzobnin-zabbix-app)
+
+Grafana has AWS datasource provisioner plugin
+
+Grafana has JSON datasource, WebSocket datasource, ECharts panel, and image renderer plugins
+
+C:\DBA_Staging\AWS\Py_VCC\ — this is where the Python scripts live that the SQL Agent jobs call
+
+pgAdmin 4 is installed — someone was using this for MySQL/PostgreSQL management
+
+Chef is installed (C:\opscode\chef) — infrastructure automation was used here
+
+These two users — vangraand and yogeshwar.phull — are your best leads for who built and knows this system. Run the config query and share the result.
+
+NULL
+

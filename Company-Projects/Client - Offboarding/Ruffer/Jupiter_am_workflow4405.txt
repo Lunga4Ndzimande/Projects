@@ -1,0 +1,109 @@
+-- TECH — Delete email workflow 4405 ("Workflow TO BE DELETED") and its outbox records
+
+Client Confirmation
+
+==============================================================================================================================================================
+clientId|clientName|s3Folder                            |
+--------+----------+------------------------------------+
+    2215|Jupiter AM|2c5c073c-537b-4890-b1a4-c94153324fa4|
+
+==============================================================================================================================================================
+-- SECTION 1: SELECT STATEMENTS — confirm the data before anything else
+==============================================================================================================================================================
+
+-- 1. Workflow
+SELECT * FROM Workflow WHERE workflowId = 4405 AND clientId = 2215;
+-- 2. WorkflowRun
+SELECT * FROM WorkflowRun WHERE workflowRunId = 44575 AND workflowId = 4405 AND clientId = 2215;
+-- 3. WorkflowRunItem
+SELECT * FROM WorkflowRunItem WHERE workflowItemId = 6392624 AND workflowRunId = 44575 AND clientId = 2215;
+-- 4. WorkflowRunItemStatusHistory
+SELECT * FROM WorkflowRunItemStatusHistory WHERE workflowItemId = 6392624 AND clientId = 2215 ORDER BY created;
+-- 5. WorkflowRunItemEmail (no clientId column on this table — confirmed)
+SELECT * FROM WorkflowRunItemEmail WHERE workflowItemId = 6392624 AND workflowRunId = 44575;
+-- 6. WorkflowEmailTemplate
+SELECT * FROM WorkflowEmailTemplate WHERE workflowId = 4405 AND emailType = 'email_distribution' AND clientId = 2215;
+-- 7. Sanity check — live workflows must still exist, untouched
+SELECT * FROM Workflow WHERE workflowId IN (4430, 4431, 4432, 4433) AND clientId = 2215;
+
+==============================================================================================================================================================
+-- SECTION 2: COUNT STATEMENTS — confirm row counts, share with requester before deleting
+==============================================================================================================================================================
+
+SELECT 'WorkflowRunItemEmail' AS table_name, COUNT(*) AS row_count FROM WorkflowRunItemEmail WHERE workflowItemId = 6392624 AND workflowRunId = 44575;
+SELECT 'WorkflowRunItemStatusHistory', COUNT(*) FROM WorkflowRunItemStatusHistory WHERE workflowItemId = 6392624 AND clientId = 2215;
+SELECT 'WorkflowRunItem', COUNT(*) FROM WorkflowRunItem WHERE workflowItemId = 6392624 AND workflowRunId = 44575 AND clientId = 2215;
+SELECT 'WorkflowRun', COUNT(*) FROM WorkflowRun WHERE workflowRunId = 44575 AND workflowId = 4405 AND clientId = 2215;
+SELECT 'WorkflowEmailTemplate', COUNT(*) FROM WorkflowEmailTemplate WHERE workflowId = 4405 AND emailType = 'email_distribution' AND clientId = 2215;
+SELECT 'Workflow', COUNT(*) FROM Workflow WHERE workflowId = 4405 AND clientId = 2215;
+
+==============================================================================================================================================================
+-- SECTION 3: BACKUP — via mysqldump
+-- Run jupiter_am_workflow4405_backup_restore.sh (BACKUP block) before Section
+-- 4 below. Uses root against UDM__, same as the previous script.
+==============================================================================================================================================================
+mkdir /tmp/tech-jupiter-4405
+cd /tmp/tech-jupiter-4405
+
+mysqldump -h0 -uroot -p'' --hex-blob --no-create-info --max_allowed_packet=512M UDM__ WorkflowRunItemEmail \
+  --where="workflowItemId=6392624 AND workflowRunId=44575" \
+  > WorkflowRunItemEmail.sql
+
+mysqldump -h0 -uroot -p'' --hex-blob --no-create-info --max_allowed_packet=512M UDM__ WorkflowRunItemStatusHistory \
+  --where="workflowItemId=6392624 AND clientId=2215" \
+  > WorkflowRunItemStatusHistory.sql
+
+mysqldump -h0 -uroot -p'' --hex-blob --no-create-info --max_allowed_packet=512M UDM__ WorkflowRunItem \
+  --where="workflowItemId=6392624 AND workflowRunId=44575 AND clientId=2215" \
+  > WorkflowRunItem.sql
+
+mysqldump -h0 -uroot -p'' --hex-blob --no-create-info --max_allowed_packet=512M UDM__ WorkflowRun \
+  --where="workflowRunId=44575 AND workflowId=4405 AND clientId=2215" \
+  > WorkflowRun.sql
+
+mysqldump -h0 -uroot -p'' --hex-blob --no-create-info --max_allowed_packet=512M UDM__ WorkflowEmailTemplate \
+  --where="workflowId=4405 AND emailType='email_distribution' AND clientId=2215" \
+  > WorkflowEmailTemplate.sql
+
+mysqldump -h0 -uroot -p'' --hex-blob --no-create-info --max_allowed_packet=512M UDM__ Workflow \
+  --where="workflowId=4405 AND clientId=2215" \
+  > Workflow.sql
+
+echo "Backup complete. Files written to /tmp/tech-jupiter-4405"
+
+==============================================================================================================================================================
+-- SECTION 4: DELETE — child records first, run only after counts are confirmed
+-- and backups above exist on disk
+==============================================================================================================================================================
+
+DELETE FROM WorkflowRunItemEmail WHERE workflowItemId = 6392624 AND workflowRunId = 44575;
+DELETE FROM WorkflowRunItemStatusHistory WHERE workflowItemId = 6392624 AND clientId = 2215;
+DELETE FROM WorkflowRunItem WHERE workflowItemId = 6392624 AND workflowRunId = 44575 AND clientId = 2215;
+DELETE FROM WorkflowRun WHERE workflowRunId = 44575 AND workflowId = 4405 AND clientId = 2215;
+DELETE FROM WorkflowEmailTemplate WHERE workflowId = 4405 AND emailType = 'email_distribution' AND clientId = 2215;
+DELETE FROM Workflow WHERE workflowId = 4405 AND clientId = 2215;
+
+
+==============================================================================================================================================================
+-- SECTION 6: CACHE UPDATE
+-- Row always exists (PK = clientId only) — never deleted, just refreshed.
+==============================================================================================================================================================
+
+SELECT * FROM WarpdriveCache WHERE clientId = 2215;
+UPDATE WarpdriveCache SET lastModified = NOW() WHERE clientId = 2215;
+
+==============================================================================================================================================================
+-- SECTION 5: RESTORE SCRIPT — rollback, reverse order (no FKs on these tables)
+==============================================================================================================================================================
+
+-- Only if a rollback is needed. See the RESTORE block at the bottom of
+-- jupiter_am_workflow4405_backup_restore.sh — fill in <host> and uncomment
+-- those lines to run.
+
+# cd /tmp/tech-jupiter-4405
+  mysql -h <host> -u root -p'' UDM__ < Workflow.sql
+  mysql -h <host> -u root -p'' UDM__ < WorkflowEmailTemplate.sql
+  mysql -h <host> -u root -p'' UDM__ < WorkflowRun.sql
+  mysql -h <host> -u root -p'' UDM__ < WorkflowRunItem.sql
+  mysql -h <host> -u root -p'' UDM__ < WorkflowRunItemStatusHistory.sql
+  mysql -h <host> -u root -p'' UDM__ < WorkflowRunItemEmail.sql

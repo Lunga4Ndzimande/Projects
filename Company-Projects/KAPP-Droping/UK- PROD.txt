@@ -1,0 +1,692 @@
+UK- ENVIRONMENT 
+
+PRODUCTION  follow every step in order for each table. Do not proceed to Drop until Backup and Verify are both confirmed good for that table.
+
+Overview
+This runbook covers 13 tables from the KSYS-13042 cleanup script. Each table is handled independently — its own backup, verification, drop, and restore — so a single table can be actioned without touching the others.
+•	tmp_pre_ksys13042 - 6 tables
+•	tmp_ksys13042_ - 6 tables
+•	ksys13042_applied - 1 table
+
+-
+Confirm all tables exist
+
+
+SELECT table_name
+FROM information_schema.tables
+WHERE table_name IN (
+    'tmp_pre_ksys13042_refs',
+    'tmp_pre_ksys13042_dangling',
+    'tmp_pre_ksys13042_migver',
+    'tmp_pre_ksys13042_prever',
+    'tmp_pre_ksys13042_oldrefs',
+    'tmp_pre_ksys13042_fix_plan',
+    'tmp_ksys13042_refs',
+    'tmp_ksys13042_dangling',
+    'tmp_ksys13042_migver',
+    'tmp_ksys13042_prever',
+    'tmp_ksys13042_oldrefs',
+    'tmp_ksys13042_fix_plan',
+    'ksys13042_applied'
+);
+
+
+Output:
+
+table_name                |
+--------------------------+
+ksys13042_applied         |
+tmp_ksys13042_dangling    |
+tmp_ksys13042_fix_plan    |
+tmp_ksys13042_migver      |
+tmp_ksys13042_oldrefs     |
+tmp_ksys13042_prever      |
+tmp_ksys13042_refs        |
+tmp_pre_ksys13042_dangling|
+tmp_pre_ksys13042_fix_plan|
+tmp_pre_ksys13042_migver  |
+tmp_pre_ksys13042_oldrefs |
+tmp_pre_ksys13042_prever  |
+tmp_pre_ksys13042_refs    |
+
+Row count for each table (before drop)
+
+SELECT 'tmp_pre_ksys13042_refs' AS table_name, COUNT(*) AS row_count FROM tmp_pre_ksys13042_refs
+UNION ALL
+SELECT 'tmp_pre_ksys13042_dangling', COUNT(*) FROM tmp_pre_ksys13042_dangling
+UNION ALL
+SELECT 'tmp_pre_ksys13042_migver', COUNT(*) FROM tmp_pre_ksys13042_migver
+UNION ALL
+SELECT 'tmp_pre_ksys13042_prever', COUNT(*) FROM tmp_pre_ksys13042_prever
+UNION ALL
+SELECT 'tmp_pre_ksys13042_oldrefs', COUNT(*) FROM tmp_pre_ksys13042_oldrefs
+UNION ALL
+SELECT 'tmp_pre_ksys13042_fix_plan', COUNT(*) FROM tmp_pre_ksys13042_fix_plan
+UNION ALL
+SELECT 'tmp_ksys13042_refs', COUNT(*) FROM tmp_ksys13042_refs
+UNION ALL
+SELECT 'tmp_ksys13042_dangling', COUNT(*) FROM tmp_ksys13042_dangling
+UNION ALL
+SELECT 'tmp_ksys13042_migver', COUNT(*) FROM tmp_ksys13042_migver
+UNION ALL
+SELECT 'tmp_ksys13042_prever', COUNT(*) FROM tmp_ksys13042_prever
+UNION ALL
+SELECT 'tmp_ksys13042_oldrefs', COUNT(*) FROM tmp_ksys13042_oldrefs
+UNION ALL
+SELECT 'tmp_ksys13042_fix_plan', COUNT(*) FROM tmp_ksys13042_fix_plan
+UNION ALL
+SELECT 'ksys13042_applied', COUNT(*) FROM ksys13042_applied
+ORDER BY 1;
+
+Output
+
+table_name                |row_count|
+--------------------------+---------+
+tmp_pre_ksys13042_refs    |     1608|
+tmp_pre_ksys13042_dangling|      178|
+tmp_pre_ksys13042_migver  |       44|
+tmp_pre_ksys13042_prever  |       44|
+tmp_pre_ksys13042_oldrefs |       44|
+tmp_pre_ksys13042_fix_plan|       43|
+tmp_ksys13042_refs        |     1608|
+tmp_ksys13042_dangling    |      178|
+tmp_ksys13042_migver      |       44|
+tmp_ksys13042_prever      |       44|
+tmp_ksys13042_oldrefs     |       44|
+tmp_ksys13042_fix_plan    |       43|
+ksys13042_applied         |       43|
+
+tmp_pre_ksys13042_refs
+Backup
+
+
+mysqldump -h 0 -u root -p'' --hex-blob UDM__ tmp_pre_ksys13042_refs > tmp_pre_ksys13042_refs.sql
+
+
+Output:
+
+Verify the backup file
+grep "CREATE ROWSTORE TABLE" tmp_pre_ksys13042_refs.sql
+grep -c "INSERT INTO" tmp_pre_ksys13042_refs.sql
+tail -5 tmp_pre_ksys13042_refs.sql
+
+
+Output:
+
+Drop
+
+
+DROP TABLE IF EXISTS tmp_pre_ksys13042_refs;
+
+
+Output:
+
+Restore
+
+
+mysql -u root -p -h (REPLACE_WITH_ENDPOINT)  UDM__ < tmp_pre_ksys13042_refs.sql
+
+
+Output:
+
+Row count check after restore
+SELECT 'tmp_pre_ksys13042_refs' AS Table_Name, COUNT(*) AS row_count FROM tmp_pre_ksys13042_refs;
+
+
+Output:
+
+tmp_pre_ksys13042_dangling
+Backup
+mysqldump -h 0 -u root -p'' --hex-blob UDM__ tmp_pre_ksys13042_dangling > tmp_pre_ksys13042_dangling.sql
+Output:
+
+
+
+Verify the backup file
+
+
+grep "CREATE ROWSTORE TABLE" tmp_pre_ksys13042_dangling.sql
+grep -c "INSERT INTO" tmp_pre_ksys13042_dangling.sql
+tail -5 tmp_pre_ksys13042_dangling.sql
+
+
+Output:
+
+
+
+Drop
+
+
+DROP TABLE IF EXISTS tmp_pre_ksys13042_dangling;
+
+
+Output:
+
+
+
+Restore
+
+
+mysql -u root -p -h (REPLACE_WITH_ENDPOINT)  UDM__ < tmp_pre_ksys13042_dangling.sql
+
+
+Output:
+
+Row count check after restore
+
+
+SELECT 'tmp_pre_ksys13042_dangling' AS Table_Name, COUNT(*) AS row_count FROM tmp_pre_ksys13042_dangling;
+
+
+Output:
+
+
+
+tmp_pre_ksys13042_migver
+
+
+Backup
+mysqldump -h 0 -u root -p'' --hex-blob UDM__ tmp_pre_ksys13042_migver > tmp_pre_ksys13042_migver.sql
+Output:
+
+Verify the backup file
+
+
+grep "CREATE ROWSTORE TABLE" tmp_pre_ksys13042_migver.sql
+grep -c "INSERT INTO" tmp_pre_ksys13042_migver.sql
+tail -5 tmp_pre_ksys13042_migver.sql
+
+
+Output:
+
+
+
+Drop
+
+
+DROP TABLE IF EXISTS tmp_pre_ksys13042_migver;
+
+
+Output:
+
+
+
+Restore
+
+
+mysql -u root -p -h (ENPOINT) UDM__ < tmp_pre_ksys13042_migver.sql
+
+
+Output:
+
+
+
+Row count check after restore
+
+
+SELECT 'tmp_pre_ksys13042_migver' AS Table_Name, COUNT(*) AS row_count FROM tmp_pre_ksys13042_migver;
+
+
+Output:
+
+
+
+tmp_pre_ksys13042_prever
+Backup
+
+
+mysqldump -h 0 -u root -p'' --hex-blob UDM__ tmp_pre_ksys13042_prever > tmp_pre_ksys13042_prever.sql
+
+
+Output:
+
+Verify the backup file
+grep "CREATE ROWSTORE TABLE" tmp_pre_ksys13042_prever.sql
+grep -c "INSERT INTO" tmp_pre_ksys13042_prever.sql
+tail -5 tmp_pre_ksys13042_prever.sql
+
+
+Output:
+
+
+
+Drop
+
+
+DROP TABLE IF EXISTS tmp_pre_ksys13042_prever;
+
+
+Output:
+
+
+
+Restore
+
+
+mysql -u root -p -h (REPLACE_WITH_ENDPOINT) UDM__ < tmp_pre_ksys13042_prever.sql
+
+
+Output:
+
+
+
+Row count check after restore
+
+
+SELECT 'tmp_pre_ksys13042_prever' AS Table_Name, COUNT(*) AS row_count FROM tmp_pre_ksys13042_prever;
+
+
+Output:
+
+
+
+tmp_pre_ksys13042_oldrefs
+Backup
+
+
+mysqldump -h 0 -u root -p'' --hex-blob UDM__ tmp_pre_ksys13042_oldrefs > tmp_pre_ksys13042_oldrefs.sql
+
+
+Output:
+
+Verify the backup file
+grep "CREATE ROWSTORE TABLE" tmp_pre_ksys13042_oldrefs.sql
+grep -c "INSERT INTO" tmp_pre_ksys13042_oldrefs.sql
+tail -5 tmp_pre_ksys13042_oldrefs.sql
+
+
+Output:
+
+
+
+Drop
+
+
+DROP TABLE IF EXISTS tmp_pre_ksys13042_oldrefs;
+
+
+Output:
+
+
+
+Restore
+
+
+mysql -u root -p -h (REPLACE_WITH_ENDPOINT) UDM__ < tmp_pre_ksys13042_oldrefs.sql
+
+
+Output:
+
+Row count check after restore
+
+
+SELECT 'tmp_pre_ksys13042_oldrefs' AS Table_Name, COUNT(*) AS row_count FROM tmp_pre_ksys13042_oldrefs;
+
+
+Output:
+
+tmp_pre_ksys13042_fix_plan
+Backup
+
+
+mysqldump -h 0 -u root -p'' --hex-blob UDM__ tmp_pre_ksys13042_fix_plan > tmp_pre_ksys13042_fix_plan.sql
+
+
+Output:
+
+Verify the backup file
+
+
+grep "CREATE ROWSTORE TABLE" tmp_pre_ksys13042_fix_plan.sql
+grep -c "INSERT INTO" tmp_pre_ksys13042_fix_plan.sql
+tail -5 tmp_pre_ksys13042_fix_plan.sql
+
+
+Output:
+
+Drop
+
+
+DROP TABLE IF EXISTS tmp_pre_ksys13042_fix_plan;
+
+
+Output:
+
+Restore
+
+
+mysql -u root -p -h (REPLACE_WITH_ENDPOINT) UDM__ < tmp_pre_ksys13042_fix_plan.sql
+
+
+Output:
+
+Row count check after restore
+
+
+SELECT 'tmp_pre_ksys13042_fix_plan' AS Table_Name, COUNT(*) AS row_count FROM tmp_pre_ksys13042_fix_plan;
+
+
+Output:
+
+tmp_ksys13042_refs
+Backup
+
+mysqldump -h 0 -u root -p'' --hex-blob UDM__ tmp_ksys13042_refs > tmp_ksys13042_refs.sql
+
+
+Output:
+
+Verify the backup file
+
+grep "CREATE ROWSTORE TABLE" tmp_ksys13042_refs.sql
+grep -c "INSERT INTO" tmp_ksys13042_refs.sql
+tail -5 tmp_ksys13042_refs.sql
+
+
+Output:
+
+Drop
+
+
+DROP TABLE IF EXISTS tmp_ksys13042_refs;
+
+
+Output:
+
+Restore
+
+
+mysql -u root -p -h (REPLACE_WITH_ENDPOINT) UDM__ < tmp_ksys13042_refs.sql
+
+
+Output:
+
+Row count check after restore
+
+
+SELECT 'tmp_ksys13042_refs' AS Table_Name, COUNT(*) AS row_count FROM tmp_ksys13042_refs;
+
+
+Output:
+
+tmp_ksys13042_dangling
+Backup
+
+
+mysqldump -h 0 -u root -p'' --hex-blob UDM__ tmp_ksys13042_dangling > tmp_ksys13042_dangling.sql
+
+
+Output:
+
+Verify the backup file
+
+
+grep "CREATE ROWSTORE TABLE" tmp_ksys13042_dangling.sql
+grep -c "INSERT INTO" tmp_ksys13042_dangling.sql
+tail -5 tmp_ksys13042_dangling.sql
+
+
+Output:
+
+Drop
+
+
+DROP TABLE IF EXISTS tmp_ksys13042_dangling;
+
+
+Output:
+
+Restore
+
+
+mysql -u root -p -h (REPLACE_WITH_ENDPOINT) UDM__ < tmp_ksys13042_dangling.sql
+
+
+Output:
+
+
+
+Row count check after restore
+
+
+SELECT 'tmp_ksys13042_dangling' AS Table_Name, COUNT(*) AS row_count FROM tmp_ksys13042_dangling;
+
+
+Output:
+
+tmp_ksys13042_migver
+Backup
+
+
+mysqldump -h 0 -u root -p'' --hex-blob UDM__ tmp_ksys13042_migver > tmp_ksys13042_migver.sql
+
+
+Output:
+
+Verify the backup file
+
+
+grep "CREATE ROWSTORE TABLE" tmp_ksys13042_migver.sql
+grep -c "INSERT INTO" tmp_ksys13042_migver.sql
+tail -5 tmp_ksys13042_migver.sql
+
+
+Output:
+
+Drop
+
+
+DROP TABLE IF EXISTS tmp_ksys13042_migver;
+
+
+Output:
+
+Restore
+
+
+mysql -u root -p -h (REPLACE_WITH_ENDPOINT) UDM__ < tmp_ksys13042_migver.sql
+
+
+Output:
+
+Row count check after restore
+
+
+SELECT 'tmp_ksys13042_migver' AS Table_Name, COUNT(*) AS row_count FROM tmp_ksys13042_migver;
+
+
+Output:
+
+tmp_ksys13042_prever
+Backup
+
+
+mysqldump -h 0 -u root -p'' --hex-blob UDM__ tmp_ksys13042_prever > tmp_ksys13042_prever.sql
+
+
+Output:
+
+Verify the backup file
+
+
+grep "CREATE ROWSTORE TABLE" tmp_ksys13042_prever.sql
+grep -c "INSERT INTO" tmp_ksys13042_prever.sql
+tail -5 tmp_ksys13042_prever.sql
+
+
+Output:
+
+Drop
+
+
+DROP TABLE IF EXISTS tmp_ksys13042_prever;
+
+
+Output:
+
+Restore
+
+
+mysql -u root -p -h (REPLACE_WITH_ENDPOINT) UDM__ < tmp_ksys13042_prever.sql
+
+
+Output:
+
+Row count check after restore
+
+
+SELECT 'tmp_ksys13042_prever' AS Table_Name, COUNT(*) AS row_count FROM tmp_ksys13042_prever;
+
+
+Output:
+
+tmp_ksys13042_oldrefs
+Backup
+
+
+mysqldump -h 0 -u root -p'' --hex-blob UDM__ tmp_ksys13042_oldrefs > tmp_ksys13042_oldrefs.sql
+
+
+Output:
+
+Verify the backup file
+
+
+grep "CREATE ROWSTORE TABLE" tmp_ksys13042_oldrefs.sql
+grep -c "INSERT INTO" tmp_ksys13042_oldrefs.sql
+tail -5 tmp_ksys13042_oldrefs.sql
+
+
+Output:
+
+Drop
+
+
+DROP TABLE IF EXISTS tmp_ksys13042_oldrefs;
+
+
+Output:
+
+Restore
+
+
+mysql -u root -p -h (REPLACE_WITH_ENDPOINT) UDM__ < tmp_ksys13042_oldrefs.sql
+
+
+Output:
+
+Row count check after restore
+
+
+SELECT 'tmp_ksys13042_oldrefs' AS Table_Name, COUNT(*) AS row_count FROM tmp_ksys13042_oldrefs;
+
+
+Output:
+
+tmp_ksys13042_fix_plan
+Backup
+
+
+mysqldump -h 0 -u root -p'' --hex-blob UDM__ tmp_ksys13042_fix_plan > tmp_ksys13042_fix_plan.sql
+
+
+Output:
+
+Verify the backup file
+
+
+grep "CREATE ROWSTORE TABLE" tmp_ksys13042_fix_plan.sql
+grep -c "INSERT INTO" tmp_ksys13042_fix_plan.sql
+tail -5 tmp_ksys13042_fix_plan.sql
+
+
+Output:
+
+Drop
+
+
+DROP TABLE IF EXISTS tmp_ksys13042_fix_plan;
+
+
+Output:
+
+Restore
+
+
+mysql -u root -p -h (REPLACE_WITH_ENDPOINT) UDM__ < tmp_ksys13042_fix_plan.sql
+
+
+Output:
+
+Row count check after restore
+
+
+SELECT 'tmp_ksys13042_fix_plan' AS Table_Name, COUNT(*) AS row_count FROM tmp_ksys13042_fix_plan;
+
+
+Output:
+
+
+
+ksys13042_applied
+Backup
+
+
+mysqldump -h 0 -u root -p'' --hex-blob UDM__ ksys13042_applied > ksys13042_applied.sql
+
+
+Output:
+
+Verify the backup file
+grep "CREATE ROWSTORE TABLE" ksys13042_applied.sql
+grep -c "INSERT INTO" ksys13042_applied.sql
+tail -5 ksys13042_applied.sql
+
+
+Output:
+
+Drop
+
+
+DROP TABLE IF EXISTS ksys13042_applied;
+
+
+Output:
+
+Restore
+
+
+mysql -u root -p -h (REPLACE_WITH_ENDPOINT) UDM__ < ksys13042_applied.sql
+
+
+Output:
+
+Row count check after restore
+
+
+SELECT 'ksys13042_applied' AS Table_Name, COUNT(*) AS row_count FROM ksys13042_applied;
+
+
+Output:
+
+
+
+Final Cleanup Script (reference only)
+This is the original cleanup script for reference. Only run this after every table above has been individually backed up and verified.
+
+
+DROP TABLE IF EXISTS tmp_pre_ksys13042_refs;
+DROP TABLE IF EXISTS tmp_pre_ksys13042_dangling;
+DROP TABLE IF EXISTS tmp_pre_ksys13042_migver;
+DROP TABLE IF EXISTS tmp_pre_ksys13042_prever;
+DROP TABLE IF EXISTS tmp_pre_ksys13042_oldrefs;
+DROP TABLE IF EXISTS tmp_pre_ksys13042_fix_plan;
+
+DROP TABLE IF EXISTS tmp_ksys13042_refs;
+DROP TABLE IF EXISTS tmp_ksys13042_dangling;
+DROP TABLE IF EXISTS tmp_ksys13042_migver;
+DROP TABLE IF EXISTS tmp_ksys13042_prever;
+DROP TABLE IF EXISTS tmp_ksys13042_oldrefs;
+DROP TABLE IF EXISTS tmp_ksys13042_fix_plan;
+DROP TABLE IF EXISTS ksys13042_applied;
+

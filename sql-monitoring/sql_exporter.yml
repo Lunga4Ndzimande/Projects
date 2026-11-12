@@ -1,0 +1,19 @@
+global:
+  scrape_timeout: 10s
+  max_connections: 3
+  max_idle_connections: 3
+
+target:
+  data_source_name: 'sqlserver://sa:Admin@1234@sql-primary:1433'
+  collectors:
+    - mssql_connections
+
+collectors:
+  - collector_name: mssql_connections
+    metrics:
+      - metric_name: mssql_connections
+        type: gauge
+        help: 'Number of active connections'
+        values: [count]
+        query: |
+          SELECT COUNT(*) as count FROM sys.dm_exec_sessions WHERE is_user_process = 1

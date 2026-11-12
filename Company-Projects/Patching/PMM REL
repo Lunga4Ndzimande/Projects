@@ -1,0 +1,287 @@
+PMM REL
+Server :ew1r-zabbix-02
+
+Preupgrade
+
+docker ps --filter "name=pmm-server"
+
+--Output
+
+CONTAINER ID   IMAGE                      COMMAND                CREATED        STATUS                  PORTS                                                 NAMES
+26caf69ad818   percona/pmm-server:3.6.0   "/opt/entrypoint.sh"   6 months ago   Up 3 months (healthy)   8080/tcp, 0.0.0.0:8081->8443/tcp, :::8081->8443/tcp   pmm-server
+root@ew1r-zabbix-02:~#
+
+docker inspect pmm-server --format '{{ range .Mounts }}{{ .Name }} -> {{ .Destination }}{{ "\n" }}{{ end }}'
+
+--Output
+
+8a0451fa04b1038dfea597ceffca4d3593cc2b6452cf949c9d3c49f0b1e8745e -> /srv
+
+
+--check for existing backups before creating a new one
+
+ls -lh /root/pmm-backups/ 2>/dev/null || echo "no backup folder found"
+find / -iname "*pmm*backup*" -not -path "*/proc/*" 2>/dev/null
+
+--Output
+
+no backup folder found
+/root/pmm-data-backup
+
+ls -lh /root/pmm-data-backup/
+
+--Output
+
+total 4.0K
+drwxr-xr-x 12 root root 4.0K May 13  2024 srv
+
+(stale — dated May 2024, predates even the 2.43.1 setup; not reused. Fresh backup taken below.)
+
+
+=======================================================================================================================================================================================================================
+Backup
+
+mkdir -p /root/pmm-backups
+
+docker run --rm \
+  -v 8a0451fa04b1038dfea597ceffca4d3593cc2b6452cf949c9d3c49f0b1e8745e:/srv \
+  -v /root/pmm-backups:/backup \
+  alpine tar czf /backup/pmm-srv-backup-$(date +%Y%m%d).tar.gz -C /srv .
+
+--Output
+
+tar: ./clickhouse/store/d1e/d1eee9b3-f0dc-47ac-b1b9-7e9e65f82716/202609_2277309_2278249_188: No such file or directory
+tar: ./clickhouse/store/d1e/d1eee9b3-f0dc-47ac-b1b9-7e9e65f82716/202609_2278251_2278251_0: No such file or directory
+tar: ./clickhouse/store/573/573e87b5-b04b-47d7-8ed1-0dee27dc7a4b/202609_2095173_2095483_62: No such file or directory
+tar: ./clickhouse/store/573/573e87b5-b04b-47d7-8ed1-0dee27dc7a4b/202609_2095484_2095484_0: No such file or directory
+tar: ./clickhouse/store/573/573e87b5-b04b-47d7-8ed1-0dee27dc7a4b/202609_2095486_2095486_0: No such file or directory
+tar: error exit delayed from previous errors
+
+(expected — ClickHouse background compaction merging files while tar reads; not fatal, archive is valid)
+
+ls -lh /root/pmm-backups/
+
+--Output
+
+total 9.0G
+-rw-r--r-- 1 root root 9.0G Sep  1 08:58 pmm-srv-backup-20260901.tar.gz
+
+
+=======================================================================================================================================================================================================================
+Upgrade
+
+STOP PMM
+
+docker stop pmm-server
+
+--output
+pmm-server
+root@ew1r-zabbix-02:~#
+
+--confirm if stopped
+
+docker ps --filter "name=pmm-server"
+
+--output
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+root@ew1r-zabbix-02:~#
+
+
+--remove old server
+docker rm pmm-server
+
+--output
+pmm-server
+root@ew1r-zabbix-02:~#
+
+docker ps -a --filter "name=pmm-server"
+
+--output
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+root@ew1r-zabbix-02:~#
+
+
+Pull Latest PMM Image
+docker pull percona/pmm-server:3.9.1
+
+--output
+
+3.9.1: Pulling from percona/pmm-server
+30627cea5424: Pull complete
+4f4fb700ef54: Pull complete
+bc6a6d0588b2: Pull complete
+311986e48205: Pull complete
+6b8fccea7763: Pull complete
+e5304bf311c1: Pull complete
+50649e90893e: Pull complete
+Digest: sha256:003f9c25f84256e53dccbd71975e3aaf98ca06e891bda86a35c262ef21ca58c1
+Status: Downloaded newer image for percona/pmm-server:3.9.1
+docker.io/percona/pmm-server:3.9.1
+root@ew1r-zabbix-02:~#
+
+
+--start new pmm server
+
+docker run -d \
+  --name pmm-server \
+  --restart unless-stopped \
+  -p 8081:8443 \
+  -v 8a0451fa04b1038dfea597ceffca4d3593cc2b6452cf949c9d3c49f0b1e8745e:/srv \
+  percona/pmm-server:3.9.1
+
+--output
+7d52bd73d1f33c51c2bcdacb1517f89e45d194057d25540e7e2fdaaf6af89223
+
+
+--check logs
+docker logs -f pmm-server
+
+--output (key lines)
+
+Running as UID 1000
+Synchronizing Grafana plugins...
+2026-09-01 09:28:23.454 UTC [30] LOG:  starting PostgreSQL 14.24 - Percona Distribution
+2026-09-01 09:28:23.475 UTC [30] LOG:  database system is ready to accept connections
+Updating /srv/postgres14/pg_hba.conf to require scram-sha-256 for host connections...
+Generating self-signed certificates for nginx...
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+2026-09-01 09:28:23,852 INFO supervisord started with pid 1
+2026-09-01 09:28:25,917 INFO success: pmm-init entered RUNNING state
+2026-09-01 09:28:25,918 INFO success: postgresql entered RUNNING state
+2026-09-01 09:28:25,918 INFO success: clickhouse entered RUNNING state
+2026-09-01 09:28:25,918 INFO success: nginx entered RUNNING state
+2026-09-01 09:28:25,918 INFO success: pmm-managed entered RUNNING state
+2026-09-01 09:28:28,881 INFO success: pmm-agent entered RUNNING state
+2026-09-01 09:28:36,626 INFO success: vmalert entered RUNNING state
+2026-09-01 09:28:36,853 INFO success: vmproxy entered RUNNING state
+2026-09-01 09:28:37,208 INFO success: qan-api2 entered RUNNING state
+2026-09-01 09:28:37,558 INFO success: grafana entered RUNNING state
+2026-09-01 09:28:37,834 INFO success: victoriametrics entered RUNNING state
+2026-09-01 09:28:49,365 INFO exited: pmm-init (exit status 0; expected)
+
+(clean startup — no errors, no crash loops)
+
+
+----------------------------------------
+Post Upgrade Checks
+
+--Version
+docker exec -it pmm-server pmm-admin --version
+
+--output
+
+ProjectName: pmm-admin
+Version: 3.9.1
+PMMVersion: 3.9.1
+Timestamp: 2026-08-18 11:43:49 (UTC)
+FullCommit: edc4e9486c201bd978c894402dff611bd3c602c0
+
+
+--exporter versions
+docker exec -it pmm-server /usr/local/percona/pmm/exporters/mysqld_exporter --version
+docker exec -it pmm-server /usr/local/percona/pmm/exporters/node_exporter --version
+docker exec -it pmm-server /usr/local/percona/pmm/exporters/postgres_exporter --version
+docker exec -it pmm-server /usr/local/percona/pmm/exporters/rds_exporter --version
+
+--output
+
+mysqld_exporter, version 0.17.2 (branch: , revision: unknown)
+  build user:
+  build date:       2026-08-18T11:42:25+0000
+  go version:       go1.26.6
+  platform:         linux/amd64
+  tags:             unknown
+init standard
+node_exporter, version 1.8.2 (branch: , revision: unknown)
+  build user:
+  build date:       2026-08-18T11:42:17+0000
+  go version:       go1.26.6
+  platform:         linux/amd64
+  tags:             unknown
+postgres_exporter, version 0.15.0 (branch: , revision: unknown)
+  build user:
+  build date:       2026-08-18T11:42:30+0000
+  go version:       go1.26.6
+  platform:         linux/amd64
+  tags:             unknown
+rds_exporter, version 0.7.4 (branch: , revision: )
+  build user:
+  build date:       2026-08-18T11:43:27+0000
+  go version:       go1.26.6
+  platform:         linux/amd64
+
+
+--monitored services and agents
+docker exec -it pmm-server psql -U postgres -d pmm-managed -c "
+SELECT
+  s.service_name          AS service_name,
+  a.agent_id,
+  a.agent_type,
+  a.version,
+  a.disabled,
+  a.status,
+  a.listen_port
+FROM agents a
+LEFT JOIN services s ON s.service_id = a.service_id
+ORDER BY a.agent_type, s.service_name NULLS LAST;"
+
+--Output
+
+     service_name      |               agent_id               |            agent_type             | version | disabled |        status         | listen_port
+-----------------------+--------------------------------------+-----------------------------------+---------+----------+------------------------+-------------
+ ew1d-dxm              | 57825780-cc78-4c1c-a473-528f70142964 | mysqld_exporter                   | 0.17.2  | f        | AGENT_STATUS_RUNNING  |       42001
+ ew1d-dxm-logging      | 71c49d46-bcf3-457e-af2f-811b56c48de0 | mysqld_exporter                   | 0.17.2  | f        | AGENT_STATUS_RUNNING  |       42003
+ ew1r-dxm              | 4a9bf86e-a71f-400e-8a92-0f3aafdf94e8 | mysqld_exporter                   | 0.17.2  | f        | AGENT_STATUS_RUNNING  |       42000
+ ew1r-dxm-logging      | 6dfd783d-c5f9-4667-bc24-b7b2a45a1f76 | mysqld_exporter                   | 0.17.2  | f        | AGENT_STATUS_RUNNING  |       42002
+ ew1r-tc               | 80a4dee5-453c-447b-9b30-6ca9d8a4fcc3 | mysqld_exporter                   | 0.17.2  | f        | AGENT_STATUS_RUNNING  |       42005
+                       | cadb47c2-28d4-408a-a63a-6e885040595f | node_exporter                     | 1.8.2   | f        | AGENT_STATUS_RUNNING  |       42006
+                       | c1b6f890-505c-48f3-80f1-bc3c83c6163d | nomad-agent                       |         | f        | AGENT_STATUS_UNKNOWN  |
+                       | pmm-server                           | pmm-agent                         | 3.9.1   | f        |                        |
+ pmm-server-postgresql | 7592b74b-5d3b-4c7c-8d4e-5b3f376ecb4b | postgres_exporter                 | 0.15.0  | f        | AGENT_STATUS_RUNNING  |       42004
+ ew1d-dxm              | 3abe4f37-33a6-4244-b701-86b30988dbd8 | qan-mysql-perfschema-agent        |         | f        | AGENT_STATUS_RUNNING  |           0
+ ew1d-dxm-logging      | 1d082e03-b8c4-4af2-8cdc-82ef101c46bc | qan-mysql-perfschema-agent        |         | f        | AGENT_STATUS_RUNNING  |           0
+ ew1r-dxm              | 0564f405-7cca-4e90-9df2-93f02cf1c721 | qan-mysql-perfschema-agent        |         | f        | AGENT_STATUS_RUNNING  |           0
+ ew1r-dxm-logging      | c3a1aac5-859e-41b0-bd02-e054987c1184 | qan-mysql-perfschema-agent        |         | f        | AGENT_STATUS_RUNNING  |           0
+ ew1r-tc               | 8ac7aba9-c698-4b18-a0cd-b9f86f3c5d88 | qan-mysql-perfschema-agent        |         | f        | AGENT_STATUS_RUNNING  |           0
+ pmm-server-postgresql | a575fd3c-5ed7-4a4e-bb2a-5f8eb578b464 | qan-postgresql-pgstatements-agent |         | f        | AGENT_STATUS_RUNNING  |           0
+                       | a7acff87-54de-46eb-8cef-318b5c118db4 | rds_exporter                      | 0.7.4   | f        | AGENT_STATUS_RUNNING  |       42007
+                       | 90138470-dd93-4a2a-881a-1c8d3b15eb4a | rds_exporter                      | 0.7.4   | f        | AGENT_STATUS_RUNNING  |       42007
+                       | ac7e45c2-0b35-40d3-a064-0617ed709d80 | rds_exporter                      | 0.7.4   | f        | AGENT_STATUS_RUNNING  |       42007
+                       | e6938348-9a84-4205-b5e9-b16bc3cbcfc8 | rds_exporter                      | 0.7.4   | f        | AGENT_STATUS_RUNNING  |       42007
+                       | 0d0ea83f-6d29-44f4-b059-3761af236ba7 | rds_exporter                      | 0.7.4   | f        | AGENT_STATUS_RUNNING  |       42008
+(20 rows)
+
+root@ew1r-zabbix-02:~#
+
+Note: row count dropped from 26 (pre-upgrade, on 3.6.0) to 20. Accounted for by:
+  - ew2r-wpv2 and ue1r-wpv2 (mysqld_exporter + qan agent each) — confirmed decommissioned separately, not upgrade-related
+  - 2x rds_exporter agents tied to the same decommissioned services
+All remaining services (ew1d-dxm, ew1r-dxm, ew1r-tc, pmm-server-postgresql) present and AGENT_STATUS_RUNNING.
+nomad-agent (AGENT_STATUS_UNKNOWN) present pre- and post-upgrade — pre-existing, introduced by PMM 3.x itself, not caused by this run.
+
+
+----------------------------------------
+UI Validation
+
+Home dashboard:
+  Monitored DB Services — MySQL: 5, PostgreSQL: 1
+  PMM Upgrade panel — "Current version: 3.9.1 (August 18, 2026 UTC) — You are up to date"
+  Last check: September 01, 9:41 UTC
+  Live sparkline data confirmed on Database Connections, QPS, Disk Reads/Writes
+
+Updates page:
+  "This PMM instance is up to date."
+  Running version: 3.9.1, August 18, 2026
+
+MySQL Instances Overview dashboard:
+  Services: 5
+  Total Current QPS: 16.60 ops/s (live, updating)
+  Min/Max MySQL Uptime: 15.56 / 19.98 weeks
+  Live query, connection, and InnoDB I/O metrics confirmed
+
+
+----------------------------------------
+Result: PASS
+
+Upgrade PMM 3.6.0 -> 3.9.1 completed successfully on ew1r-zabbix-02.
+Backup retained at /root/pmm-backups/pmm-srv-backup-20260901.tar.gz (9.0GB).

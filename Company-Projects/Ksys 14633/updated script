@@ -1,0 +1,323 @@
+/* =====================================================================
+   TECH-4399 / KSYS-12922  -  Drop AIProvider schema, purge Secrets,
+   strip AIProviders from Client.modules
+   ENVIRONMENT : REL  (UDM__ on SingleStore)
+   REL numbers : providers 3 | calls 85 | matching secrets 3
+                 clients with module 15 | ChartAI baseline 17
+                 total Secrets 2203 (expect 2200 after)
+
+   HOW TO USE THIS FILE
+   - Do NOT run the whole file at once. Run ONE statement at a time
+     (select it, Ctrl+Enter in DBeaver).
+   - Lines starting with  [SHELL]  are shell commands for the REL
+     jumpbox, not SQL. Never paste them into mysql> or DBeaver.
+   - Accounts: CSE = read-only (inventory, dumps).
+               root = writes (delete, update). Type passwords only at
+               the prompt, never in the command or in chat.
+   - Stop and paste the output if ANY number differs from "expect".
+   - v2: every statement that CHANGES data (5b, 7c) is now commented out
+     with the tag [WRITE]. Pasting this file into a write connection
+     cannot delete or update anything. To run a write you must
+     deliberately remove the leading '-- ' after its prerequisites pass.
+   ===================================================================== */
+
+
+/* =====================================================================
+   STEP 0 - PREREQUISITES (no SQL)
+   - KSYS-12922 is Done
+   - TECH-4399's parent TECH-4398 shows udm_ai uninstalled in REL
+   - Someone agrees REL rows can be deleted (ticket says not retained)
+   ===================================================================== */
+
+
+/* =====================================================================
+   STEP 1 - CONFIRM ENVIRONMENT (read-only)
+   Host must contain 'rel'. DATABASE() must be UDM__ (not NULL).
+   If NULL: right-click UDM__ > Set as Default, or run:  USE UDM__;
+   ===================================================================== */
+SELECT @@hostname, DATABASE(), CURRENT_USER();
+
+
+/* =====================================================================
+   STEP 2 - INVENTORY (read-only). Attach results to the ticket.
+   ===================================================================== */
+
+ 2a. Do the tables exist? (2 rows expected on REL
+
+SELECT TABLE_NAME FROM information_schema.TABLES
+WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN ('AIProvider','AIProviderCall');
+
+-- 2b. Counts + ChartAI baseline. Expect 3 | 85 | 3 | 15 | 17 | 2203
+
+SELECT
+  (SELECT COUNT(*) FROM AIProvider)     AS providers,
+  (SELECT COUNT(*) FROM AIProviderCall) AS calls,
+  (SELECT COUNT(*) FROM Secrets WHERE id IN
+      (SELECT credentialId FROM AIProvider WHERE credentialId IS NOT NULL)) AS matching_secrets,
+  (SELECT COUNT(*) FROM Client WHERE CAST(modules AS CHAR) LIKE '%AIProviders%') AS clients_with_module,
+  (SELECT COUNT(*) FROM Client WHERE CAST(modules AS CHAR) LIKE '%ChartAI%')     AS chartai_baseline,
+  (SELECT COUNT(*) FROM Secrets) AS total_secrets;
+
+-- 2c. Providers and their credentials (no secret values shown)
+SELECT p.aiProviderId, p.clientId, p.name, p.credentialId, s.id AS secret_id
+FROM AIProvider p LEFT JOIN Secrets s ON s.id = p.credentialId;
+
+-- 2d. Owning client (expect client 53, Kurtovest Demo)
+SELECT DISTINCT c.clientId, c.clientName, c.s3Folder
+FROM AIProvider p JOIN Client c ON c.clientId = p.clientId
+ORDER BY c.clientId;
+
+-- 2e. Any client with the token more than once? (expect NO rows)
+
+SELECT clientId,
+  (LENGTH(CAST(modules AS CHAR)) - LENGTH(REPLACE(CAST(modules AS CHAR), 'AIProviders', '')))
+    / LENGTH('AIProviders') AS occ
+FROM Client
+WHERE CAST(modules AS CHAR) LIKE '%AIProviders%'
+HAVING occ > 1;
+
+-- 2f. Token position (expect 15 rows, pos > 0 on every row)
+
+SELECT clientId, JSON_LENGTH(modules) AS n,
+       LOCATE('AIProviders', CAST(modules AS CHAR)) AS pos
+FROM Client
+WHERE CAST(modules AS CHAR) LIKE '%AIProviders%'
+ORDER BY clientId;
+
+
+/* =====================================================================
+   STEP 3 - BACKUP WITH MYSQLDUMP (read-only, run on the REL jumpbox)
+   Take ALL dumps BEFORE any change. Never attach the Secrets dump to
+   Jira; attach only checksums.
+   ===================================================================== */
+
+-- 3a. Variables and folder (use the REAL REL host from DBeaver)
+
+DBHOST=ew1r-kapp-db-primary.rel.kurtosys-internal.net
+echo "$DBHOST"
+getent hosts "$DBHOST"
+nc -zv "$DBHOST" 3306
+
+Set up the dump folder and timestamp
+
+umask 077
+mkdir -p /tmp/KSYS-12922-rel && chmod 700 /tmp/KSYS-12922-rel && cd /tmp/KSYS-12922-rel
+TS=$(date +%Y%m%d-%H%M%S); echo $TS; pwd
+
+
+
+       3b. Secrets: the 3 REL credentials
+        mysqldump -h "$DBHOST" -u CSE -p --column-statistics=0 --hex-blob --no-create-info --complete-insert --skip-lock-tables --skip-disable-keys --skip-add-locks --max_allowed_packet=512M UDM__ Secrets \
+         where="id IN ('a9f0e991-cfa3-44a9-a794-85a146bd7573','7d9582b0-5dc0-48ca-80f7-b3c5ebd82b42','25b6b4fc-1367-42e0-a949-47f902060ff2')" \
+         > Secrets_aiprovider_backup_$TS.sql
+
+-- [SHELL] 3c. Client rows that have the module (15 rows)
+--   mysqldump -h "$DBHOST" -u CSE -p --column-statistics=0 --hex-blob --no-create-info --complete-insert --replace --skip-lock-tables --skip-disable-keys --skip-add-locks --max_allowed_packet=512M UDM__ Client \
+--     --where="CAST(modules AS CHAR) LIKE '%AIProviders%'" \
+--     > Client_modules_backup_$TS.sql
+
+-- [SHELL] 3d. The two tables (structure + data)
+--   mysqldump -h "$DBHOST" -u CSE -p --column-statistics=0 --hex-blob --complete-insert --skip-lock-tables --skip-disable-keys --skip-add-locks --max_allowed_packet=512M UDM__ AIProvider AIProviderCall \
+--     > AIProvider_tables_backup_$TS.sql
+
+-- [SHELL] 3e. Verify. DO NOT CONTINUE unless every check passes.
+--   ls -l
+--   grep -o "'[0-9a-f-]\{36\}'" Secrets_aiprovider_backup_$TS.sql | sort -u | wc -l   # expect 3
+--   grep -o "([0-9]*,'" Client_modules_backup_$TS.sql | wc -l                         # expect 15
+--   grep -c "INSERT INTO" AIProvider_tables_backup_$TS.sql                            # at least 2
+--   tail -n 2 *_$TS.sql                  # each file must end with "-- Dump completed"
+--   sha256sum *.sql > checksums_$TS.txt; cat checksums_$TS.txt
+
+
+/* =====================================================================
+   STEP 4 - SWITCH TO A WRITE ACCOUNT (root) AND RE-CHECK ENVIRONMENT
+   CSE is SELECT-only. In DBeaver use a root connection, or on the
+   jumpbox:  mysql -h "$DBHOST" -u root -p UDM__
+   ===================================================================== */
+SELECT @@hostname, DATABASE(), CURRENT_USER();   -- host must contain 'rel', user root
+
+
+/* =====================================================================
+   STEP 5 - DELETE THE 3 SECRETS (must run BEFORE the tables are dropped)
+   Only Secrets rows are deleted. Client 53 and the providers are NOT
+   touched here.
+   ===================================================================== */
+
+-- 5a. Count before. Expect 3.
+SELECT COUNT(*) AS before_delete FROM Secrets
+WHERE id IN (SELECT credentialId FROM AIProvider WHERE credentialId IS NOT NULL);
+
+-- 5b. [WRITE] Delete the 3 secrets. Prerequisites: Step 3e passed (dumps
+--     verified), Step 4 shows a REL host, 5a returned 3.
+--     Uncomment ONLY these lines when ready:
+-- DELETE FROM Secrets
+-- WHERE id IN ('a9f0e991-cfa3-44a9-a794-85a146bd7573',
+--              '7d9582b0-5dc0-48ca-80f7-b3c5ebd82b42',
+--              '25b6b4fc-1367-42e0-a949-47f902060ff2')
+--   AND clientId = 53;
+--     Note: the upgrade also deletes these secrets before dropping the
+--     tables, so this manual delete exists to make the restore test possible.
+
+-- 5c. Check. Expect matching_left 0 | total_now 2200 | providers_untouched 3
+SELECT
+  (SELECT COUNT(*) FROM Secrets WHERE id IN
+      (SELECT credentialId FROM AIProvider WHERE credentialId IS NOT NULL)) AS matching_left,
+  (SELECT COUNT(*) FROM Secrets)    AS total_now,
+  (SELECT COUNT(*) FROM AIProvider) AS providers_untouched;
+
+
+/* =====================================================================
+   STEP 6 - TEST THE RESTORE (REL rows are disposable, so prove it here)
+   ===================================================================== */
+
+-- [SHELL] 6a. Restore the Secrets from the dump (as root)
+--   cd /tmp/KSYS-12922-rel
+--   mysql -h "$DBHOST" -u root -p UDM__ < Secrets_aiprovider_backup_$TS.sql
+--   If it complains about ALTER/LOCK lines, filter them:
+--   grep -v "ALTER TABLE\|LOCK TABLES\|UNLOCK TABLES" Secrets_aiprovider_backup_$TS.sql | mysql -h "$DBHOST" -u root -p UDM__
+
+-- 6b. Re-run 5c. Expect matching_left 3 | total_now 2203  (restore worked)
+-- 6c. Then run 5b again so REL ends clean, and 5c again:
+--     expect matching_left 0 | total_now 2200
+--     If the restore fails and the count is 0, STOP. Do not touch the dump file.
+
+
+/* =====================================================================
+   STEP 7 - STRIP "AIProviders" FROM Client.modules (15 clients)
+   Double quotes are built with CHAR(34) so DBeaver cannot choke on them.
+   Leaves "ChartAI" and the separate "Secrets" module alone.
+   ===================================================================== */
+
+-- 7a. PREVIEW. Expect 15 rows, after_n = before_n - 1 on EVERY row,
+--     still_has_token = 0 on every row. Otherwise STOP and paste it.
+SELECT clientId,
+  JSON_LENGTH(modules) AS before_n,
+  JSON_LENGTH(
+    REPLACE(REPLACE(REPLACE(CAST(modules AS CHAR),
+      CONCAT(',', CHAR(34), 'AIProviders', CHAR(34)), ''),
+      CONCAT(CHAR(34), 'AIProviders', CHAR(34), ','), ''),
+      CONCAT('[', CHAR(34), 'AIProviders', CHAR(34), ']'), '[]') :> JSON) AS after_n,
+  (REPLACE(REPLACE(REPLACE(CAST(modules AS CHAR),
+      CONCAT(',', CHAR(34), 'AIProviders', CHAR(34)), ''),
+      CONCAT(CHAR(34), 'AIProviders', CHAR(34), ','), ''),
+      CONCAT('[', CHAR(34), 'AIProviders', CHAR(34), ']'), '[]')
+    LIKE '%AIProviders%') AS still_has_token
+FROM Client
+WHERE CAST(modules AS CHAR) LIKE '%AIProviders%'
+ORDER BY clientId;
+
+-- 7b. DRY RUN (jumpbox, mysql client; rolls back so nothing changes).
+--     DBeaver autocommits, so do the dry run in the mysql client:
+--     [SHELL] mysql -h "$DBHOST" -u root -p UDM__     then at mysql> paste:
+--
+--       START TRANSACTION;
+--       UPDATE Client SET modules = REPLACE(REPLACE(REPLACE(CAST(modules AS CHAR),
+--           CONCAT(',', CHAR(34), 'AIProviders', CHAR(34)), ''),
+--           CONCAT(CHAR(34), 'AIProviders', CHAR(34), ','), ''),
+--           CONCAT('[', CHAR(34), 'AIProviders', CHAR(34), ']'), '[]')
+--         WHERE CAST(modules AS CHAR) LIKE '%AIProviders%';
+--       SELECT COUNT(*) AS should_be_0 FROM Client WHERE CAST(modules AS CHAR) LIKE '%AIProviders%';
+--       SELECT COUNT(*) AS chartai_same FROM Client WHERE CAST(modules AS CHAR) LIKE '%ChartAI%';
+--       ROLLBACK;
+--       SELECT COUNT(*) AS back_to_original FROM Client WHERE CAST(modules AS CHAR) LIKE '%AIProviders%';
+--
+--     Expect should_be_0 = 0 | chartai_same = 17 | back_to_original = 15.
+--     If back_to_original is 0 the rollback did not work: restore from
+--     Client_modules_backup_$TS.sql.
+
+-- 7c. [WRITE] REAL UPDATE, GUARDED. Do not paste the bare UPDATE into a
+--     write connection. Run this on the jumpbox instead: it refuses to run
+--     unless the host contains 'rel', the pre-counts are exactly 15 and 17,
+--     and it reports PASS/FAIL afterwards. On FAIL restore the Client dump.
+--
+--   [SHELL]
+--   cat > strip_guarded.sh <<'EOF'
+--   #!/usr/bin/env bash
+--   set -euo pipefail
+--   Q() { mysql -h "$DBHOST" -u root -p"$PW" -N -B UDM__ -e "$1"; }
+--   read -r -s -p "root password: " PW; echo
+--   HN=$(Q "SELECT @@hostname"); echo "Host: $HN"
+--   case "$HN" in *rel*) ;; *) echo "NOT REL - aborting"; exit 1;; esac
+--   PRE_AI=$(Q "SELECT COUNT(*) FROM Client WHERE CAST(modules AS CHAR) LIKE '%AIProviders%'")
+--   PRE_CH=$(Q "SELECT COUNT(*) FROM Client WHERE CAST(modules AS CHAR) LIKE '%ChartAI%'")
+--   echo "AIProviders=$PRE_AI (expect 15)  ChartAI=$PRE_CH (expect 17)"
+--   [ "$PRE_AI" = "15" ] && [ "$PRE_CH" = "17" ] || { echo "Counts differ - aborting"; exit 1; }
+--   read -r -p "Type REL to run the UPDATE: " a; [ "$a" = "REL" ] || { echo "Aborted"; exit 1; }
+--   Q "UPDATE Client SET modules = REPLACE(REPLACE(REPLACE(CAST(modules AS CHAR),
+--        CONCAT(',', CHAR(34), 'AIProviders', CHAR(34)), ''),
+--        CONCAT(CHAR(34), 'AIProviders', CHAR(34), ','), ''),
+--        CONCAT('[', CHAR(34), 'AIProviders', CHAR(34), ']'), '[]')
+--      WHERE CAST(modules AS CHAR) LIKE '%AIProviders%'"
+--   POST_AI=$(Q "SELECT COUNT(*) FROM Client WHERE CAST(modules AS CHAR) LIKE '%AIProviders%'")
+--   POST_CH=$(Q "SELECT COUNT(*) FROM Client WHERE CAST(modules AS CHAR) LIKE '%ChartAI%'")
+--   if [ "$POST_AI" = "0" ] && [ "$POST_CH" = "$PRE_CH" ]; then echo "PASS ($POST_AI / $POST_CH)"
+--   else echo "FAIL ($POST_AI / $POST_CH) - restore: mysql ... < Client_modules_backup_<TS>.sql"; fi
+--   EOF
+--   chmod 700 strip_guarded.sh && ./strip_guarded.sh   # needs DBHOST exported
+
+-- 7d. Check. Expect should_be_0 = 0 | chartai = 17 (same as baseline)
+SELECT
+  (SELECT COUNT(*) FROM Client WHERE CAST(modules AS CHAR) LIKE '%AIProviders%') AS should_be_0,
+  (SELECT COUNT(*) FROM Client WHERE CAST(modules AS CHAR) LIKE '%ChartAI%')     AS chartai;
+
+
+/* =====================================================================
+   STEP 8 - DEPLOY THE UPGRADE
+   Deploy the ksysUDM upgrade from branch
+   feature/KSYS-12922-drop-aiprovider-tables-and-module-seeds
+   through the usual DB upgrade path. REVIEW the SQL first: it should
+   drop AIProviderCall, then AIProvider, then remove the AIProviders
+   module, 4 permissions, CREATE/UPDATE/DELETE activity types and
+   TableId rows. (Seed rows are NOT in the dumps above; dump them first
+   if you want a full rollback.)
+   ===================================================================== */
+
+
+/* =====================================================================
+   STEP 9 - VERIFY ACCEPTANCE CRITERIA
+   ===================================================================== */
+
+-- 9a. Tables gone (expect NO rows)
+SELECT TABLE_NAME FROM information_schema.TABLES
+WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN ('AIProvider','AIProviderCall');
+
+-- 9b. No client still lists the module; ChartAI unchanged (0 and 17)
+SELECT
+  (SELECT COUNT(*) FROM Client WHERE CAST(modules AS CHAR) LIKE '%AIProviders%') AS should_be_0,
+  (SELECT COUNT(*) FROM Client WHERE CAST(modules AS CHAR) LIKE '%ChartAI%')     AS chartai_17;
+
+-- 9c. The 3 Secrets are gone (expect 0). Uses IDs, since AIProvider no longer exists.
+SELECT COUNT(*) AS should_be_0 FROM Secrets
+WHERE id IN ('a9f0e991-cfa3-44a9-a794-85a146bd7573',
+             '7d9582b0-5dc0-48ca-80f7-b3c5ebd82b42',
+             '25b6b4fc-1367-42e0-a949-47f902060ff2');
+
+-- 9d. Module, permissions, activity types, TableId rows: the table names
+--     are in the upgrade file udm_db/artifacts/upgrades/2026-09-15-drop-ai-provider-tables.sql
+--     (Modules, Permissions, RolePermission, ActivityType, ActivityCategoryType,
+--     TableId). TODO: add the exact verification SELECTs from that file's
+--     DELETE conditions. Historical Activity rows are expected to remain.
+
+
+/* =====================================================================
+   STEP 10 - FULL ROLLBACK (only if something goes wrong; run as root)
+   Reverse order. Restores data only, not the app code or udm_ai.
+   LIMITS: only the 3 secrets restore is tested. The upgrade's seed-row
+   deletes (Modules, Permissions, RolePermission, ActivityType,
+   ActivityCategoryType, TableId) are NOT backed up here. Dump those rows
+   first if a full rollback is required. Postgres is not covered.
+   ===================================================================== */
+-- [SHELL] cd /tmp/KSYS-12922-rel
+-- [SHELL] mysql -h "$DBHOST" -u root -p UDM__ < AIProvider_tables_backup_$TS.sql   # DROP/CREATE + data
+-- [SHELL] mysql -h "$DBHOST" -u root -p UDM__ < Client_modules_backup_$TS.sql      # REPLACE INTO (whole rows)
+-- [SHELL] mysql -h "$DBHOST" -u root -p UDM__ < Secrets_aiprovider_backup_$TS.sql  # if row exists: delete first
+-- Then re-run STEP 2b. Expect 3 | 85 | 3 | 15 | 17 | 2203.
+
+
+/* =====================================================================
+   STEP 11 - EVIDENCE AND CLEANUP
+   Attach to the ticket: Step 1 hostname, Step 2 counts, checksums_$TS.txt,
+   Step 5c, 7a, 7d and 9a-9c results. NOT the Secrets dump.
+   After sign-off: delete the dump files (especially the Secrets one),
+   and run  unset MYSQL_PWD  if you set it.
+   ===================================================================== */

@@ -1,0 +1,39 @@
+
+-- ===== RESTORE 1. Secrets (TESTED, passed) =====
+ cd /tmp/KSYS-12922-rel
+TS=20261110-112806   then   echo "[$TS] [$DBHOST]"   (empty TS => "No such file")
+ls -l Secrets_aiprovider_backup_$TS.sql
+ mysql -h "$DBHOST" -u root -p UDM__ < Secrets_aiprovider_backup_$TS.sql
+-- Check: matching_left 3, total_now 2203. Then repeat the delete (Part 3 B2) so REL ends clean.
+SELECT
+  (SELECT COUNT(*) FROM Secrets WHERE id IN
+      (SELECT credentialId FROM AIProvider WHERE credentialId IS NOT NULL)) AS matching_left,
+  (SELECT COUNT(*) FROM Secrets) AS total_now;
+
+-- Final clean state expected: 0 | 2200 | providers 3  (still to confirm after the test)
+
+-- RESTORE 2. Seed rows: LEVEL A (safe replay, changes nothing)
+
+--- Dumps use REPLACE INTO, so loading them re-writes the same rows. Run Part 1 step 8
+----before and after: the six counts must be identical. Needs root (CSE cannot insert).
+-- (TS2 = timestamp of the Seed_ files)
+--   for t in Modules Permissions RolePermission ActivityType ActivityCategoryType TableId; do echo "== $t"; mysql -h "$DBHOST" -u root -p UDM__ < Seed_${t}_$TS2.sql || break; done
+
+--  RESTORE 3. Seed rows: LEVEL B (delete then restore; REL ONLY, never prod) =====
+-- Child first, then parent. Optional; Level A is enough to prove the files load.
+   [WRITE] 
+   DELETE FROM RolePermission WHERE permissionId IN ('VIEW_AI_PROVIDERS','UPSERT_AI_PROVIDER','DELETE_AI_PROVIDER','MAKE_AI_PROVIDER_CALL');
+   DELETE FROM Permissions    WHERE permissionId IN ('VIEW_AI_PROVIDERS','UPSERT_AI_PROVIDER','DELETE_AI_PROVIDER','MAKE_AI_PROVIDER_CALL');
+  --  Check Part 1 step 8: permissions 0, role_permissions 0. Then restore parent first:
+       mysql   "$DBHOST" -u root -p UDM__ < Seed_Permissions_$TS2.sql
+       mysql -h "$DBHOST" -u root -p UDM__ < Seed_RolePermission_$TS2.sql
+--   Check Part 1 step 8: permissions 4, role_permissions 12 (as before).
+
+-- ===== FULL ROLLBACK (only if something goes wrong; reverse order) =====
+    cd /tmp/KSYS-12922-rel   (re-set TS, DBHOST)
+   mysql -h "$DBHOST" -u root -p UDM__ < AIProvider_tables_backup_$TS.sql   # DROP/CREATE + data (needs DDL rights)
+   mysql -h "$DBHOST" -u root -p UDM__ < Client_modules_backup_$TS.sql      # REPLACE INTO, whole rows
+   mysql -h "$DBHOST" -u root -p UDM__ < Secrets_aiprovider_backup_$TS.sql  # if rows exist: delete first
+
+
+
